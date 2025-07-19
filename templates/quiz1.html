@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <title>Kiểm tra trắc nghiệm</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/styles.css') }}">
+</head>
+<body>
+    <div class="tieude">
+        <p>Tieu de</p>
+    </div>
+    <div id="contain">
+    <!-- panel -->
+     <div id="panel">
+            <div id="thongbao1" ></div>
+            <p>Xin chào, 
+                <span class="username">{{ users }}</span><br>Lớp: 
+                <span class="username">{{lop}}</span>
+            </p>
+            <p>Số câu hỏi:</p>
+            <ul id="question-status">
+                {% for num_q in range(questions | length) %}
+                <li id="c{{num_q}}"><a href="#q{{num_q}}">{{ loop.index }}</a></li>
+                {% endfor %}
+            </ul>
+        <div id="thongbao" ></div>
+    </div>
+<!-- form -->
+    <form action="/result" method="post">
+        {% for num_q in range(questions | length) %}
+            <div class="question-block" id="q{{num_q}}">
+                <p class="question-title"><strong>Câu {{ loop.index }}.</strong></p>
+                <div class="question-content">
+                    {% for text in questions[num_q].question %}
+                        {% if text.startswith("[static/images") %}
+                            <img src="{{ text[1:-1] }}" alt="Hình ảnh câu hỏi" class="question-image">
+                        {% else %}
+                        <p class="question-text">{{ text }}</p>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+
+                <div class="options">
+                    {% for option in questions[num_q].options %}
+                        <label class="option-item">
+                            <!-- <input type="radio" name="c{{num_q}}" value="{{ option }}"> -->
+                             <input type="radio" name="c{{num_q}}" value="{{ 'ABCD'[loop.index0] }}">
+                                {{ option }}
+                        </label>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endfor %}
+        <input type="submit" value="Nộp bài">
+    </form>
+    </div>
+    <script>
+    document.addEventListener("DOMContentLoaded", function () {
+        let inputs = document.querySelectorAll("input[type='radio']");
+        
+        inputs.forEach(input => {
+            input.addEventListener("change", function () {
+                let questionId = this.name; // Lấy tên input (q0, q1, q2...) để xác định câu hỏi
+                let questionItem = document.getElementById(questionId);
+                
+                if (questionItem) {
+                    questionItem.style.fontWeight = "bold"; // Tô đậm số câu
+                    questionItem.style.color = "white"; // Đổi màu xanh
+                    questionItem.style.backgroundColor = "green"; // Đổi màu xanh
+                }
+            });
+        });
+    });
+
+    document.addEventListener("DOMContentLoaded", function () {
+        let form = document.querySelector("form");
+        let submitButton = form.querySelector("input[type='submit']");
+        
+        form.addEventListener("submit", function (event) {
+            localStorage.removeItem("quizStartTime"); // Xóa thời gian khi bài được nộp
+            let allQuestionsAnswered = true;
+            let numQuestions = {{ questions | length }};
+            
+            for (let i = 0; i < numQuestions; i++) {
+                let radioButtons = document.getElementsByName("c" + i);
+                let checked = Array.from(radioButtons).some(radio => radio.checked);
+                
+                if (!checked) {
+                    allQuestionsAnswered = false;
+                    break;
+                }
+            }
+
+            if (!allQuestionsAnswered) {
+                event.preventDefault();
+                alert("Vui lòng trả lời tất cả các câu hỏi trước khi nộp bài!");
+            }
+        });
+    });
+
+    document.addEventListener("DOMContentLoaded", function () {
+    function updateQuestionStatus() {
+        let totalQuestions = document.querySelectorAll("input[type='radio'][name^='c']").length / 4; // Giả sử mỗi câu có 4 lựa chọn
+        let answeredQuestions = 0;
+
+        for (let i = 0; i < totalQuestions; i++) {
+            let radioButtons = document.getElementsByName("c" + i);
+            let isAnswered = Array.from(radioButtons).some(radio => radio.checked);
+            if (isAnswered) {
+                answeredQuestions++;
+            }
+        }
+
+        let remainingQuestions = totalQuestions - answeredQuestions;
+
+        document.querySelector("#thongbao").innerHTML = `
+            <p>Số câu đã làm: <strong>${answeredQuestions}/${totalQuestions}</strong></p>
+        `;
+    }
+
+        let inputs = document.querySelectorAll("input[type='radio']");
+        inputs.forEach(input => {
+            input.addEventListener("change", updateQuestionStatus);
+        });
+
+        updateQuestionStatus(); // Gọi hàm này lần đầu để cập nhật trạng thái ngay khi tải trang
+    });
+    // Hàm thơi gian.
+    document.addEventListener("DOMContentLoaded", function () {
+    let startTime = localStorage.getItem("quizStartTime");
+    let timeLimit = 4 * 60; // 30 phút = 1800 giây
+
+    if (!startTime) {
+        startTime = Math.floor(Date.now() / 1000);
+        localStorage.setItem("quizStartTime", startTime);
+    }
+
+    function updateTimer() {
+        let currentTime = Math.floor(Date.now() / 1000);
+        let elapsedTime = currentTime - startTime;
+        let remainingTime = timeLimit - elapsedTime;
+
+        let timerDisplay = document.querySelector("#thongbao1");
+
+        if (remainingTime <= 0) {
+            document.querySelector("form").submit();
+            localStorage.removeItem("quizStartTime");
+        } else {
+            let minutes = Math.floor(remainingTime / 60);
+            let seconds = remainingTime % 60;
+            let secondsFormatted = seconds < 10 ? "0" + seconds : seconds;
+            let timeText = `<p>Thời gian còn lại: <strong>${minutes}:${secondsFormatted}</strong></p>`;
+            if (remainingTime <= 120) {
+                timerDisplay.innerHTML = `<p class="blink" style="color: red; font-weight: bold;">Thời gian còn lại: <strong>${minutes}:${secondsFormatted}</strong></p>`;
+
+            } else {
+                timerDisplay.innerHTML = timeText;
+            }
+        }
+    }
+
+    document.querySelectorAll("input[type='radio']").forEach(input => {
+    input.addEventListener("change", function () {
+        let questionId = this.name; // "c0", "c1"...
+        let navItem = document.querySelector(`#c${questionId.slice(1)}`);
+        if (navItem) {
+            navItem.classList.add("answered");
+        }
+        });
+    });
+
+
+    setInterval(updateTimer, 1000);
+    updateTimer();
+    });
+    </script>
+
+</body>
+</html>

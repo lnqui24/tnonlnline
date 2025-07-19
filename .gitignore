@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+
+# Môi trường ảo
+venv/
+env/
+
+# Biến môi trường
+.env
+
+# Cơ sở dữ liệu
+*.sqlite3
+*.db
+
+# Flask instance
+instance/
+
+# IDE / Editor
+.vscode/
+.idea/
+
+# Hệ thống
+.DS_Store
+Thumbs.db

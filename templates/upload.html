@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Tải lên đề trắc nghiệm</title>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+    onload="renderMathInElement(document.body, {
+      delimiters: [
+        {left: '$$', right: '$$', display: true},
+        {left: '\\(', right: '\\)', display: false},
+        {left: '$', right: '$', display: false}
+      ]
+    });"></script>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(to left, #c6ffdd, #fbd786, #f7b3b5);
+        }
+        #tieude {
+            text-align: center;
+            width: 30%;
+        }
+        #id_dethi {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        #id_dethi input[type="text"] {
+            margin: 10px 0;
+            font-size: 30px;
+            padding: 10px;
+            width: 300px;
+            text-align: center;
+        }
+        #drop-area {
+            background-color: antiquewhite;
+            border: 2px dashed #ccc;
+            border-radius: 20px;
+            width: 70%;
+            height: 70%;
+            margin: auto;
+            padding: 100px 100px;
+            text-align: center;
+            font-family: sans-serif;
+            color: #666;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        #drop-area.hover {
+            border-color: #333;
+        }
+        .quay-ve-btn {
+            display: inline-block;
+            padding: 8px 16px;
+            background-color: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+        }
+        .quay-ve-btn:hover {
+            background-color: #95bc97;
+        }
+        #drop-area .flash-message {
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            font-size: 18px;
+            width: 80%;
+            text-align: center;
+        }
+
+        #drop-area .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        #drop-area .alert-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <div id="tieude">
+        <h2 style="font-size: 50px;">Kéo thả file Word (.docx) vào khung bên</h2>
+        <a href="{{ url_for('upload.danh_sach_de_thi') }}" class="quay-ve-btn">Quay về</a>
+    </div>
+    <div id="drop-area">
+         {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="flash-message alert-{{ category }}">
+                {{ message }}
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <form method="POST" enctype="multipart/form-data">
+            <input type="file" name="file" id="fileElem" accept=".docx" style="display:none" onchange="form.submit()">
+            <label for="fileElem" style="cursor: pointer; font-size: 40px;">Nhấn để chọn file hoặc kéo thả vào đây</label>
+        </form>
+    </div>
+
+    <script>
+        let dropArea = document.getElementById('drop-area');
+
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        dropArea.addEventListener('drop', handleDrop, false);
+
+        function handleDrop(e) {
+            let dt = e.dataTransfer;
+            let files = dt.files;
+            let form = dropArea.querySelector('form');
+            let input = document.getElementById('fileElem');
+            input.files = files;
+            form.submit();
+        }
+
+        setTimeout(() => {
+    document.querySelectorAll('.flash-message').forEach(msg => {
+        msg.style.transition = 'opacity 0.8s ease';
+        msg.style.opacity = '0';
+        setTimeout(() => msg.remove(), 800);
+    });
+}, 4000);
+
+    </script>
+</body>
+</html>

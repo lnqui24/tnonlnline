@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Thông tin người dùng</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/users.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/styles_quanli_dethi.css') }}">
+</head>
+<body>
+    <!-- menu -->
+    <div class="navbar">
+    <a href="{{ url_for('upload.danh_sach_de_thi') }}">Trang Chủ</a>
+    <div class="subnav">
+        <button class="subnavbtn">Quản lí đề thi <i class="fa fa-caret-down"></i></button>
+        <div class="subnav-content">
+        <a href="../upload">Tạo đề thi</a>
+        <!-- <a href="#team">Team</a>
+        <a href="#careers">Careers</a> -->
+        </div>
+    </div>
+    <div class="subnav">
+        <button class="subnavbtn">Người dùng <i class="fa fa-caret-down"></i></button>
+        <div class="subnav-content">
+        <a href="{{ url_for('users.users') }}">Danh sách người dùng</a>
+        <!-- <a href="#deliver">Deliver</a>
+        <a href="#package">Package</a>
+        <a href="#express">Express</a> -->
+        </div>
+    </div>
+    <!-- <div class="subnav">
+        <button class="subnavbtn">Partners <i class="fa fa-caret-down"></i></button>
+        <div class="subnav-content">
+        <a href="#link1">Link 1</a>
+        <a href="#link2">Link 2</a>
+        <a href="#link3">Link 3</a>
+        <a href="#link4">Link 4</a>
+        </div>
+    </div> -->
+    <a href="{{ url_for('xuli_dethi.lam_bai') }}">Vào Thi</a>
+    <a href="#contact">Liên hệ</a>
+    
+    </div>
+
+    <h1>Danh sách người dùng</h1>
+    <table border="1">
+        <tr>
+            <th>STT</th>
+            <th>ID</th>
+            <th>Tên</th>
+            <th>Lớp</th>
+            <th>Trường</th>
+            <th>Thao tác</th>
+        </tr>
+        {% if users %}
+            {% for user in users %}
+                <tr>
+                    <td>{{loop.index}}</td>
+                    <td>{{ user[0] }}</td>
+                    <td>{{ user[1] }}</td>
+                    <td>{{ user[2] }}</td>
+                    <td>{{ user[3] }}</td>
+                    <td>
+                        <form action="{{ url_for('users.delete_user', user_id=user[0]) }}" method="POST">
+                            <button type="submit">Xóa</button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+            {% else %}
+                <tr>
+                    <td colspan="9" style="text-align: center; font-style: italic; color: #666;">
+                        Không có người dùng nào!</td>
+                </tr>
+            {% endif %}
+    </table>
+    <div>
+        {% if page > 1 %}
+            <a href="{{ url_for('users.users', page=page-1) }}">{{page-1}}</a>
+        {% endif %}
+        <span>Trang {{ page }}</span>
+        <a href="{{ url_for('users.users', page=page+1) }}">{{page+1}}</a>
+    </div>
+    <a href="/">Quay lại trang chủ</a>
+</body>
+</html>

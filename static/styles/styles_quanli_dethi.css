@@ -1,0 +1,144 @@
+body {
+    font-family: 'Segoe UI', sans-serif;
+    background-color: #f4f4f4;
+    padding: 0px;
+    background: linear-gradient(to left, #c6ffdd, #fbd786, #f7b3b5);
+    height: 100vh;
+    font-family: "Poppins", sans-serif;
+    font-weight: bold;
+    box-sizing: border-box;
+    margin: 0;
+}
+h2 {
+    text-align: center;
+    color: #4CAF50;
+    margin-bottom: 30px;
+}
+table {
+    border-collapse: collapse;
+    margin: auto;
+    width: 90%;
+    background-color: white;
+    box-shadow: 0 0 15px rgba(0,0,0,0.1);
+}
+th, td {
+    padding: 12px 15px;
+    border: 1px solid #ccc;
+    text-align: center;
+}
+th {
+    background-color: #4CAF50;
+    color: white;
+}
+tr:nth-child(even) {
+    background-color: #e5eee9;
+}
+a {
+    text-decoration: none;
+    color: #2196F3;
+}
+/* menu */
+/* The navigation menu */
+.navbar {
+overflow: hidden;
+background-color: rgb(237, 233, 150);
+}
+
+/* Navigation links */
+.navbar a {
+float: left;
+font-size: 16px;
+color: black;
+text-align: center;
+padding: 14px 16px;
+text-decoration: none;
+}
+
+/* The subnavigation menu */
+.subnav {
+float: left;
+overflow: hidden;
+}
+
+/* Subnav button */
+.subnav .subnavbtn {
+font-size: 16px;
+border: none;
+outline: none;
+color: black;
+padding: 14px 16px;
+background-color: inherit;
+font-family: inherit;
+margin: 0;
+}
+
+/* Add a red background color to navigation links on hover */
+.navbar a:hover, .subnav:hover .subnavbtn {
+background-color: #4CAF50;
+}
+
+/* Style the subnav content - positioned absolute */
+.subnav-content {
+display: none;
+position: absolute;
+left: 0;
+background-color: #4CAF50;
+width: 100%;
+z-index: 1;
+}
+
+/* Style the subnav links */
+.subnav-content a {
+float: left;
+color: white;
+text-decoration: none;
+}
+
+/* Add a grey background color on hover */
+.subnav-content a:hover {
+background-color: #eee;
+color: rgb(224, 157, 157);
+}
+
+/* When you move the mouse over the subnav container, open the subnav content */
+.subnav:hover .subnav-content {
+display: block;
+}
+.quay-ve-btn {
+    display: inline-block;
+    padding: 1px 5px;
+    background-color: #4CAF50;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+}
+.quay-ve-btn:hover {
+    background-color: #fb0b0b;
+}
+<style>
+.quay-ve-btn {
+    font-weight: bold;
+    padding: 4px 10px;
+    border-radius: 4px;
+    color: white;
+    text-decoration: none;
+    transition: background-color 0.3s ease;
+}
+
+.quay-ve-btn.mo-khoa {
+    background-color: green;
+}
+
+.quay-ve-btn.mo-khoa:hover {
+    background-color: red;
+}
+
+.quay-ve-btn.khoa {
+    background-color: red;
+}
+
+.quay-ve-btn.khoa:hover {
+    background-color: green;
+}
+</style>

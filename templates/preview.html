@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Xem trước câu hỏi</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/styles.css') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+    onload="renderMathInElement(document.body, {
+      delimiters: [
+        {left: '$$', right: '$$', display: true},
+        {left: '\\(', right: '\\)', display: false},
+        {left: '$', right: '$', display: false}
+      ]
+    });"></script>
+    <style>
+
+    #panel {
+        max-width: 24vw;
+        margin: 2vw auto;
+        padding: 30px;
+        background-color: #f9f9f9;
+        border-radius: 12px;
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    #panel label {
+        display: block;
+        font-weight: bold;
+        margin-bottom: 6px;
+        color: #333;
+    }
+
+    .id_da {
+        margin-bottom: 20px;
+    }
+
+    input[type="text"]{
+        width: 100%;
+    }
+    input[type="number"] {
+        width: 100%;
+        padding: 2%;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        font-size: 16px;
+        box-sizing: border-box;
+    }
+
+    input[type="checkbox"] {
+        margin-top: 8px;
+        transform: scale(1.5);
+        cursor: pointer;
+    }
+
+    input[type="submit"] {
+        padding: 10px 20px;
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 16px;
+        transition: background-color 0.3s ease;
+    }
+
+    input[type="submit"]:hover {
+        background-color: #45a049;
+    }
+
+    h2.panel-title {
+        text-align: center;
+        color: #4CAF50;
+        margin-bottom: 25px;
+    }
+
+    /* option */
+    .custom-radio {
+        background-color: #f9f9f9;
+        display: flex;
+        align-items: center;
+        margin: 8px 0;
+        cursor: pointer;
+        font-size: 16px;
+    }
+     .custom-radio:hover{
+        background-color: antiquewhite;
+     }
+    .custom-radio input[type="radio"] {
+        display: none;
+    }
+
+    .radio-mark {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        border: 2px solid #4CAF50;
+        margin-right: 10px;
+        font-weight: bold;
+        color: #4CAF50;
+        background-color: white;
+        transition: all 0.2s ease;
+    }
+
+    .custom-radio input[type="radio"]:checked + .radio-mark {
+        background-color: #4CAF50;
+        color: white;
+        border: 2px solid #4CAF50;
+    }
+    
+    </style>
+</head>
+<body>
+    <h2 style="text-align: center;">Đề thi: <b style="color: red;">{{ id_dethi }}</b></h2>
+        <form action="/save_dethi" method="POST">
+        <div id="contain" style="display: block; width: 79vw;">     
+            {% for num_q in range(questions | length) %}
+                <div class="question-block" id="q{{num_q}}">
+                    <p class="question-title"><strong>Câu {{ loop.index }}.</strong></p>
+                    <div class="question-content">
+                        {% for text in questions[num_q].question %}
+                            {% if text.startswith("[static/images") %}
+                                <img src="{{ url_for('static', filename=text[8:-1]) }} " style="display: block; margin: 0 auto;" alt="Hình ảnh câu hỏi">
+                            {% else %}
+                                <textarea class="question-text" style="width: 100%;">{{ text }}</textarea>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+
+                    <div class="options">
+                        {% for option in questions[num_q].options %}
+                            <label class="custom-radio">
+                                <input type="radio" name="dap_an_{{ num_q }}" value="{{ 'ABCD'[loop.index0] }}"
+                                    {% if dap_an and dap_an[num_q] == 'ABCD'[loop.index0] %}checked{% endif %}>
+                                <span class="radio-mark">{{ 'ABCD'[loop.index0] }}</span>
+                                <textarea style="width: 100%;">{{ option }}</textarea>
+                                {% if dap_an and dap_an[num_q] == 'ABCD'[loop.index0] %}
+                                    <span style="color: green; font-weight: bold; margin-left: 10px;">← Đáp án đúng</span>
+                                {% endif %}
+                            </label>
+
+                        {% endfor %}
+                    </div>
+            </div>
+            {% endfor %}
+        </div>
+        <div id="panel">
+                <label for="id_dethi">Thông tin đề thi</label>
+                <div class="id_da" style="padding-left: 5%;">
+                    <label for="ten_dethi" style="color: red;">Tên kỳ kiểm tra:</label>
+                    <input type="text" name="ten_dethi" id="ten_dethi" style="margin-bottom: 5px;" 
+                        placeholder="Kiểm tra TX1,.." value="{{ ten_dethi if ten_dethi is defined else '' }}"><br>
+                    <label for="id_dapan" style="color: red; display: inline;">Cho xem đáp án?</label>
+                    <input type="checkbox" name="id_dapan" id="id_dapan" style="transform: scale(1.5);" 
+                        {% if id_dapan %} checked {% endif %}>
+                    <label for="timeLimit" style="color: red; padding-top: 2%;">Thời gian làm bài:</label>
+                    <input type="text" name="timeLimit" id="timeLimit" placeholder="Đơn vị phút" style="width: 30%;"
+                        value="{{ timeLimit if timeLimit is defined else '' }}"> phút
+                <!-- </div> -->
+                <!-- <div> -->
+                    <label for="id_dethi" style="padding-top:2%; color: red;">Mã đề thi:</label>
+                    <input type="text" name="id_dethi" id="id_dethi" value="{{ id_dethi }}">
+                    <label for="xt_ht" style="padding: 5px;">Yêu cầu HS nhập: </label>
+                    <div style="border: 1px solid rgb(214, 185, 185); border-radius:5px">
+                        <div style="margin: 5px;">
+                            <label> <input type="checkbox" name="xt_ht" value="Họ tên" 
+                                {% if 'Họ tên' in xt_list %} checked{% endif %}> Họ tên </label>
+                            <label> <input type="checkbox" name="xt_lop" value="Lớp"
+                                {% if 'Lớp' in xt_list %}checked{% endif %}> Lớp </label>
+                            <label> <input type="checkbox" name="xt_tr" value="Trường"
+                                {% if 'Trường' in xt_list %}checked{% endif %}> Trường </label>
+                        </div>
+                    </div>
+                    <input type="submit" value="Lưu đáp án">
+                </div>
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        <div id="flash-message" style="text-align: center; padding: 5px; background-color: lightgreen; color: green; font-weight: bold;">
+                        {% for category, message in messages %}
+                            {{ message }}
+                        {% endfor %}
+                        </div>
+
+                        <script>
+                        setTimeout(() => {
+                            window.location.href = "{{ url_for('upload.danh_sach_de_thi') }}";
+                        }, 500);  // 1 giây = 1000ms
+                        </script>
+                    {% endif %}
+                {% endwith %}
+        </div>
+    </form>
+</body>
+</html>

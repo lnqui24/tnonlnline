@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Chi tiết bài làm - Đề {{ id_dethi }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/styles_quanli_dethi.css') }}">
+    <style>
+        .btn {
+        padding: 10px 20px;
+        margin: 2px;
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 16px;
+        transition: background-color 0.3s ease;
+    }
+
+        .btn:hover {
+        background-color: #9beda1;
+    }
+        .info_tt{
+            width: 75vw;
+            margin-left: 10vw;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn_inf_tt{
+            display: flex;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body>
+<!-- menu -->
+    <div class="navbar">
+    <a href="{{ url_for('upload.danh_sach_de_thi') }}">Trang Chủ</a>
+    <div class="subnav">
+        <button class="subnavbtn">Quản lí đề thi <i class="fa fa-caret-down"></i></button>
+        <div class="subnav-content">
+        <a href="../upload">Tạo đề thi</a>
+        <!-- <a href="#team">Team</a>
+        <a href="#careers">Careers</a> -->
+        </div>
+    </div>
+    <div class="subnav">
+        <button class="subnavbtn">Người dùng <i class="fa fa-caret-down"></i></button>
+        <div class="subnav-content">
+        <a href="{{ url_for('users.users') }}">Danh sách người dùng</a>
+        <!-- <a href="#deliver">Deliver</a>
+        <a href="#package">Package</a>
+        <a href="#express">Express</a> -->
+        </div>
+    </div>
+    <!-- <div class="subnav">
+        <button class="subnavbtn">Partners <i class="fa fa-caret-down"></i></button>
+        <div class="subnav-content">
+        <a href="#link1">Link 1</a>
+        <a href="#link2">Link 2</a>
+        <a href="#link3">Link 3</a>
+        <a href="#link4">Link 4</a>
+        </div>
+    </div> -->
+    <a href="{{ url_for('xuli_dethi.lam_bai') }}">Vào Thi</a>
+    <a href="#contact">Liên hệ</a>
+    </div>
+<!--  -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div id="flash-message" style="text-align: center; padding: 5px; background-color: lightgreen; color: green; font-weight: bold;">
+            {% for category, message in messages %}
+                {{ message }}
+            {% endfor %}
+            </div>
+
+            <script>
+            setTimeout(() => {
+                window.location.href = "{{ url_for('xuli_dethi.bailam', id_dethi=id_dethi) }}";
+            }, 2000);  // 2 giây = 2000ms
+            </script>
+        {% endif %}
+    {% endwith %}
+
+    <div class="info_tt">
+        <h2>Chi tiết bài làm đề thi: <span style="color: red;"><span style="font-family: Consolas, monospace;">
+            {{ id_dethi }}</span> - {{ten_dethi}} </span></h2>
+        <p style="text-indent: 10vw;">Số học sinh tham gia: <span style="color: red; font-weight: bold;">{{ so_hs }}</span>
+            | Số học sinh chưa nộp: <span style="color: red; font-weight: bold;"> {{ so_hs_chuanop }}</span> |
+            <form class="btn_inf_tt" action="{{ url_for('cham_bai.cham_lai_toan_bo_de', id_dethi=id_dethi) }}" method="post" >
+                <button class="btn" id="btnChamLai" onclick="if (!confirm('Bạn có chắc muốn chấm lại toàn bộ bài thi không?')) return;">♻️Chấm lại tất cả</button>
+                <!-- <a href="{{ url_for('xuat_excel.xuat_excel_baithi',id_dethi=id_dethi) }}" class="btn" onclick="">📥 Xuất Excel</a> -->
+                 <a href="{{ url_for('xuat_excel.xuat_excel_baithi', id_dethi=id_dethi) }}" 
+                class="btn" onclick="setTimeout(() => { location.reload(); }, 2000)">📥 Xuất Excel</a>
+            </form>
+        </p>
+        <div id="pro_bar" style="margin-top:10px;">
+            <div style="background:#ddd; width:100%; height:25px; border-radius:5px; overflow:hidden;">
+                <div id="progress_inner" style="height:100%; width:0%; background:#4CAF50; text-align:center; color:white; transition:width 0.2s;"></div>
+            </div>
+        </div>
+    </div>  
+    <table border="1" cellpadding="5" cellspacing="0" >
+        <thead>
+            <tr>
+                <th>STT</th>
+                <th>Mã học sinh</th>
+                <th>Đề hoán vị</th>
+                <th>Tên </th>
+                <th>Lớp</th>
+                <th>Trường</th>
+                <th>Điểm</th>
+                <th>Trả lời</th>
+                <th>Thời gian làm</th>
+                <th>Ngày làm</th>
+                <th>Nội dung</th>
+                <th>Trạng thái</th>
+                <th>Thao tác</th>
+                
+            </tr>
+        </thead>
+        <tbody id="bang-ket-qua">
+            {% for ket_qua_item in ket_qua %}
+                {% set idx = loop.index %}
+                {% set id_hocsinh = ket_qua_item[0] %}
+                {% set id_dethi_hv = ket_qua_item[1] %}
+                {% set ten = ket_qua_item[7] if ket_qua_item[7] else "..." %}
+                {% set lop = ket_qua_item[8] if ket_qua_item[8] else "..."  %}
+                {% set truong = ket_qua_item[9] if ket_qua_item[9] else "..." %} 
+                {% set diem = ket_qua_item[2] %}
+                {% set thoi_gian_lam = ket_qua_item[3] %}
+                {% set dap_an_lam = ket_qua_item[4] %}
+                {% set ngay_lam = ket_qua_item[5] %}
+                {% set noidung = ket_qua_item[6] %}
+                {% set trang_thai = ket_qua_item[10] %}
+            <tr>
+                <td>{{ idx }}</td>
+                <td>{{ id_hocsinh }}</td>
+                <td style="font-family: Consolas, monospace;">{{ id_dethi_hv }}</td>
+                <td style="white-space: nowrap;">{{ ten }}</td>
+                <td>{{ lop }}</td>
+                <td>{{ truong }}</td>
+                <td><span style="color: red;">{{ diem }}</span></td>
+                <td>{{ dap_an_lam }}</td>
+                <td>{{ thoi_gian_lam }}</td>
+                <td>{{ ngay_lam }}</td>
+                <!-- <td>{{ noidung }}</td> -->
+                 <td><a href="{{ url_for('xuli_dethi.xem_baithi', id_dethi_hv=id_dethi_hv) }}" target="_blank">Xem bài</a></td>
+                <td>
+                    {% if trang_thai == "Đã chấm lại" %}
+                        ♻️
+                    {% elif trang_thai == "Đã nộp bài" %}
+                        ✅
+                    {% else %}
+                        ❌
+                    {% endif %}
+                </td>
+                <td>    
+                    <form method="POST" action="{{ url_for('xuli_dethi.xoa_bai_lam') }}" onsubmit="return confirm('Bạn có chắc muốn xoá bài làm này không?');">
+                        <input type="hidden" name="id_dethi_hv" value="{{ id_dethi_hv }}">
+                        <input type="hidden" name="id_dethi" value="{{ id_dethi }}">
+                        <button  type="submit" class="btn">Xoá</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+            {% if not ket_qua %}
+            <tr><td colspan="13" style="text-align:center;">Chưa có bài làm nào.</td></tr>
+            {% endif %}
+        </tbody>
+    </table>
+    <p style="text-align: center;"><a class="btn" href="{{ url_for('upload.danh_sach_de_thi') }}"> << Quay lại danh sách đề thi</a></p>
+
+<!--  -->
+<script>
+let intervalId = null;
+
+function capNhatBangBaiLam() {
+    fetch("/api/baithi/{{ id_dethi }}")
+        .then(response => response.json())
+        .then(data => {
+            const tbody = document.querySelector("#bang-ket-qua");
+            tbody.innerHTML = "";
+
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="13" style="text-align:center;">Chưa có bài làm nào.</td></tr>';
+                return;
+            }
+
+            data.forEach((item, index) => {
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${item.id_hocsinh}</td>
+                    <td style="font-family: Consolas, monospace;">${item.id_dethi_hv}</td>
+                    <td style="white-space: nowrap;">${item.hoten || "..."}</td>
+                    <td>${item.lop || "..."}</td>
+                    <td>${item.truong || "..."}</td>
+                    <td><span style="color: red;">${item.diem !== null ? item.diem : "<i>Chưa chấm</i>"}</span></td>
+                    <td>${item.dap_an_lam}</td>
+                    <td>${item.thoi_gian_lam}</td>
+                    <td>${item.ngay_lam}</td>
+                    <td><a href="/xem_baithi/${item.id_dethi_hv}">Xem bài</a></td>
+                    <td>${item.trang_thai === "Đã chấm lại"
+                            ? "♻️"
+                            : item.trang_thai === "Đã nộp bài"
+                            ? "✅"
+                            : "❌"}
+                    </td>
+                    <td>
+                        <form method="POST" action="/xoa_bai_lam" onsubmit="return confirm('Bạn có chắc muốn xoá bài làm này không?');">
+                            <input type="hidden" name="id_dethi_hv" value="${item.id_dethi_hv}">
+                            <input type="hidden" name="id_dethi" value="{{ id_dethi }}">
+                            <button type="submit" class="btn">Xoá</button>
+                        </form>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        });
+}
+
+// Bắt đầu cập nhật mỗi 10 giây
+function batDauCapNhat() {
+    if (!intervalId) {
+        capNhatBangBaiLam();  // gọi ngay lần đầu
+        intervalId = setInterval(capNhatBangBaiLam, 5000);
+    }
+}
+
+// Dừng cập nhật
+function dungCapNhat() {
+    if (intervalId) {
+        clearInterval(intervalId);
+        intervalId = null;
+    }
+}
+
+// Gán sự kiện vào vùng bảng
+const vungBang = document.getElementById("bang-ket-qua");
+vungBang.addEventListener("mouseenter", batDauCapNhat);
+vungBang.addEventListener("mouseleave", dungCapNhat);
+// 
+</script>
+
+</body>
+</html>

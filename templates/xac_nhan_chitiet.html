@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Xác nhận thông tin đề thi</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/styles_lam_bai.css') }}">
+</head>
+<body>
+    <div class="cont">
+        <div class="form-container">
+            <form method="POST" action="{{ url_for('xuli_dethi.thi') }}">
+            <h2 style="color: darkgreen;">Xác nhận thông tin trước khi bắt đầu</h2>
+            <!-- <p><strong>Mã học sinh:</strong> {{ id_hocsinh }}</p> -->
+            <p><strong>Tên đề thi:</strong><span> <b> {{ dethi.ten_dethi if dethi.ten_dethi else "Chưa nhập" }} </b></span></p>
+            <p><strong>Mã đề thi:</strong><span> <b> {{ dethi.id }} </b></p>
+            <p><strong>Số câu hỏi:</strong><span> <b> {{ dethi.so_cau }} </b> </p>
+            <p><strong>Thời gian làm bài:</strong><span> <b> {{ dethi.time }} phút </b></p>
+
+            {% if 'Họ tên' in xt_list %}
+                <div>
+                    <label for="ho_ten">Họ tên học sinh:</label>
+                    <input type="text" name="ho_ten" id="ho_ten" required
+                    oninvalid="this.setCustomValidity('Bạn cần nhập họ tên')"
+                    oninput="this.setCustomValidity('')" placeholder="Lê Ngọc Quí">
+                </div>
+            {% endif %}
+
+            {% if 'Lớp' in xt_list %}
+                <div>
+                    <label for="lop">Lớp:</label>
+                    <input type="text" name="lop" id="lop" required
+                    oninvalid="this.setCustomValidity('Bạn cần nhập lớp')"
+                    oninput="this.setCustomValidity('')" placeholder="12A1">
+                </div>
+            {% endif %}
+
+            {% if 'Trường' in xt_list %}
+                <div>
+                    <label for="truong">Trường:</label>
+                    <input type="text" name="truong" id="truong" required
+                    oninvalid="this.setCustomValidity('Bạn cần nhập trường học của mình')"
+                    oninput="this.setCustomValidity('')" placeholder="THPT Châu Văn Liêm">
+                </div>
+            {% endif %}
+                <input type="hidden" name="id_dethi" value="{{ dethi.id }}">
+                <input type="hidden" name="id_hocsinh" value="{{ id_hocsinh }}">
+                <button type="submit">Bắt đầu làm bài</button>
+            </form>
+        </div>
+        <div style="text-align: center;">
+            <a href="{{ url_for('xuli_dethi.lam_bai') }}" class="back-link">← Quay lại</a>
+        </div>
+    </div>
+</body>
+</html>

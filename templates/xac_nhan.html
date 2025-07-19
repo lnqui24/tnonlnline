@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8" />
+    <title>Nhập mã đề thi</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/styles_lam_bai.css') }}" /> 
+</head>
+<body>
+    <div class="form-container">
+        <h2>🔐 Nhập mã đề thi</h2>
+        <form method="POST" action="{{ url_for('xuli_dethi.lam_bai') }}">
+            <label for="ma_dethi">Mã đề thi:</label>
+            <input type="text" id="ma_dethi" name="ma_dethi" placeholder="Nhập mã đề..." required autofocus
+                title="Nhập mã đề thi do Giáo viên cung cấp." />
+            <button type="submit">Xác nhận</button>
+        </form>
+
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <div class="message error" id="thongbao">
+                    {% for msg in messages %}
+                        {{ msg }}
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <script>
+        setTimeout(function() {
+            var flash = document.getElementById('thongbao');
+            if (flash) { flash.style.display = 'none'; }
+        }, 3000);
+    </script>
+</body>
+</html>

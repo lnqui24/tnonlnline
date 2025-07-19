@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Xác nhận mã đề</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/styles_quanli_dethi.css') }}">
+</head>
+<body>
+    <h2 style="color: darkblue;">Nhập mã đề để làm bài thi</h2>
+
+    {% if error %}
+        <div style="color: red; margin-bottom: 20px;">
+            {{ error }}
+        </div>
+    {% endif %}
+
+    <form action="{{ url_for('xuli_dethi.lam_bai') }}" method="POST">
+        <label for="ma_dethi">Mã đề thi:</label>
+        <input type="text" id="ma_dethi" name="ma_dethi" required>
+        <button type="submit">Xác nhận</button>
+    </form>
+</body>
+</html>

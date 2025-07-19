@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Đã nộp bài</title>
+    <meta http-equiv="refresh" content="5;url={{ url_for('xuli_dethi.lam_bai') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/styles.css') }}">
+</head>
+<body>
+    <div style="width: 100vw; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">
+        <div class="message" > <span style="font-size:larger ;">✅ Bạn đã nộp bài thành công!</span></div>
+        <div class="countdown" > <span style="font-size: large;">Bạn sẽ được chuyển về trang làm bài sau <span id="seconds">5</span> giây...</span></div>
+    </div>
+
+    <script>
+        localStorage.removeItem("quizStartTime");
+        localStorage.removeItem("quizAnswers");
+        let seconds = 5;
+        const countdown = document.getElementById('seconds');
+        setInterval(() => {
+            seconds--;
+            if (seconds >= 0) countdown.textContent = seconds;
+        }, 1000);
+    </script>
+</body>
+</html>

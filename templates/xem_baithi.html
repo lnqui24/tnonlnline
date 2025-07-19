@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Xem bài thi</title>
+    <!-- <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"> -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+    onload="renderMathInElement(document.body, {
+      delimiters: [
+        {left: '$$', right: '$$', display: true},
+        {left: '\\(', right: '\\)', display: false},
+        {left: '$', right: '$', display: false}
+      ]
+    });"></script>
+</head>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 30px;
+            max-width: 800px;
+            margin: auto;
+            background: linear-gradient(to left, #c6ffdd, #fbd786, #f6c4c6);
+        }
+        h1 {
+            text-align: center;
+        }
+        .question {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 25px;
+            background-color: #f9f9f9;
+        }
+        .question-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .question-content {
+            font-weight: normal;
+            margin-bottom: 10px;
+        }
+        .option {
+            padding: 8px;
+            margin: 5px 0;
+            border-radius: 5px;
+        }
+        .option.correct {
+            background-color: #d4edda;
+            border: 1px solid #28a745;
+        }
+        .option.incorrect {
+            background-color: #f8d7da;
+            border: 1px solid #dc3545;
+        }
+        .option.selected {
+            font-weight: bold;
+        }
+        img {
+            max-width: 100%;
+            margin: 10px 0;
+        }
+        .info {
+            margin-bottom: 30px;
+            padding: 15px;
+            border-left: 5px solid #007bff;
+            background-color: #eef3fa;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1 style="color: #dc3545; font-family: Consolas, monospace;">XEM BÀI THI:{{ id_dethi_hv }}</h1>
+    <div class="info">
+        <p><strong>Họ tên:</strong> <span style="color: blue;"> {{ baithi.hoten_hs }}</span></p>
+        <p><strong>Lớp:</strong><span style="color: blue;"> {{ baithi.lop_hs }}</span></p>
+        <p><strong>Trường:</strong><span style="color: blue;"> {{ baithi.truong }}</span></p>
+        <p><strong>Ngày làm:</strong><span style="color: blue;"> {{ baithi.ngay_lam }}</span></p>
+        <p><strong>Thời gian làm:</strong><span style="color: blue;"> {{ baithi.thoi_gian_lam }}</span></p>
+        <p><strong>Điểm:</strong> {{ baithi.diem }}</p>
+        <p><strong>Tổng số câu:</strong><span style="color: blue;"> {{ questions|length }}</span></p>
+        <p><strong>Số câu đúng:</strong><span style="color: blue;"> {{ so_cau_dung }}</span></p>
+        <p><strong>Số câu sai:</strong><span style="color: blue;"> {{ so_cau_sai }}</span></p>
+    </div>
+
+    {% for q in questions %}
+    <div class="question">
+        <div class="question-title">
+            Câu {{ loop.index }}:
+            <div class="question-content">
+                {% for item in q.question %}
+                    {% if item.startswith('[') and item.endswith(']') %}
+                        {% set image_path = item[1:-1] %}
+                        <img src="{{ url_for('static', filename=image_path.split('static/')[-1]) }}" alt="Hình minh họa">
+                    {% else %}
+                        <p>{{ item }}</p>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+        <div class="options">
+            {% for opt in q.options %}
+                {% set opt_letter = "ABCD"[loop.index0] %}
+                {% set is_correct = loop.index0 == q.answer %}
+                {% set is_chosen = opt_letter == q.hs_chon %}
+                {% set is_chosen_correct = is_correct and is_chosen %}
+                <div class="option 
+                            {% if is_correct %}correct{% elif is_chosen %}incorrect{% endif %} 
+                            {% if is_chosen %}selected{% endif %}">
+                    <strong>{{ opt_letter }}.</strong> {{ opt }}
+                    {% if is_chosen_correct %} <strong style="font-weight: bold; margin-left: 10px;">←  Đúng </strong> ✅{% endif %}
+                    {% if is_chosen and not is_correct %} ❌{% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+</body>
+</html>

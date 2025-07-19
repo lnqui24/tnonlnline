@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <title>Kiểm tra trắc nghiệm</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/styles.css') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+    onload="renderMathInElement(document.body, {
+      delimiters: [
+        {left: '$$', right: '$$', display: true},
+        {left: '\\(', right: '\\)', display: false},
+        {left: '$', right: '$', display: false}
+      ]
+    });"></script>
+</head>
+<body>
+    <div class="tieude">
+        <p>Đề kiểm tra: <span style="color: red;"> {{ dethi.ten_dethi.title() if dethi.ten_dethi else '(Chưa nhập)' }} - 
+             <span style="font-family: Consolas, monospace;"> {{ id_dethi_hv }} </span> </span></p>
+    </div>
+    <div id="contain">
+    <!-- panel -->
+     <div id="panel">
+            <div id="thongbao1" ></div>
+            <p>Xin chào, 
+                <span class="username">{{ hoten if hoten else "Chưa nhập" }}</span><br>
+                Lớp: 
+                <span class="username">{{ lop if lop else "Chưa nhập" }}</span><br>
+                Trường: 
+                <span class="username">{{ truong if truong else "Chưa nhập" }}</span>
+            </p>
+            <p>Số câu hỏi:</p>
+            <ul id="question-status">
+                {% for num_q in range(questions | length) %}
+                <li id="c{{num_q}}"><a href="#q{{num_q}}">{{ loop.index }}</a></li>
+                {% endfor %}
+            </ul>
+        <div id="thongbao" ></div>
+    </div>
+<!-- form -->
+    <form action="/nopbai" method="post">
+        <input type="hidden" name="id_dethi_hv" value="{{ id_dethi_hv}}">
+        <div id="contain" style="display: block; width: 79vw;">     
+            {% for num_q in range(questions | length) %}
+                <div class="question-block" id="q{{num_q}}">
+                    <p class="question-title"><strong>Câu {{ loop.index }}.</strong></p>
+                    <div class="question-content">
+                        {% for text in questions[num_q].question %}
+                            {% if text.startswith("[static/images") %}
+                                <img src="{{ url_for('static', filename=text[8:-1]) }} " style="display: block; margin: 0 auto;" alt="Hình ảnh câu hỏi">
+                            {% else %}
+                                <p class="question-text">{{ text }}</p>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+
+                    <div class="options">
+                        {% for option in questions[num_q].options %}
+                            <label class="custom-radio">
+                                <input type="radio" name="dap_an_{{ num_q }}" value="{{ 'ABCD'[loop.index0] }}"
+                                    {% if dap_an and dap_an[num_q] == 'ABCD'[loop.index0] %}checked{% endif %}>
+                                <span class="radio-mark">{{ 'ABCD'[loop.index0] }}</span>
+                                {{ option }}
+                                {% if dap_an and dap_an[num_q] == 'ABCD'[loop.index0] %}
+                                    <span style="color: green; font-weight: bold; margin-left: 10px;">← Đáp án đúng</span>
+                                {% endif %}
+                            </label>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        <input type="submit" value="Nộp bài">
+    </form>
+    </div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const totalQuestions = parseInt("{{ questions | length }}");
+    const form = document.querySelector("form");
+    const submitButton = form.querySelector("input[type='submit']");
+    const timeLimit = {{ time }} * 60; // thời gian làm bài (giây)
+    const now = Math.floor(Date.now() / 1000); // thời gian hiện tại (Unix timestamp)
+
+    // Hàm xoá toàn bộ dữ liệu bài làm khỏi localStorage
+    function clearStorage() {
+        localStorage.removeItem("quizStartTime");
+        localStorage.removeItem("hasSubmitted");
+        for (let i = 0; i < totalQuestions; i++) {
+            localStorage.removeItem("dap_an_" + i);
+        }
+    }
+
+    // Thiết lập hoặc kiểm tra thời gian bắt đầu làm bài
+    let startTime = parseInt(localStorage.getItem("quizStartTime"));
+
+    // Nếu chưa có hoặc đã hết giờ thì đặt lại
+    if (!startTime || (startTime + timeLimit < now)) {
+        clearStorage(); // xoá dữ liệu cũ nếu hết giờ hoặc lần đầu
+        startTime = now;
+        localStorage.setItem("quizStartTime", startTime);
+    }
+
+    // Khôi phục đáp án từ localStorage
+    function restoreAnswersFromStorage() {
+        for (let i = 0; i < totalQuestions; i++) {
+            const name = "dap_an_" + i;
+            const savedAnswer = localStorage.getItem(name);
+            if (savedAnswer) {
+                const radios = document.getElementsByName(name);
+                radios.forEach(radio => {
+                    if (radio.value === savedAnswer) {
+                        radio.checked = true;
+                        markAnswered(i);
+                    }
+                });
+            }
+        }
+    }
+
+    // Đánh dấu câu đã trả lời
+    function markAnswered(index) {
+        const navItem = document.querySelector(`#c${index}`);
+        if (navItem) {
+            navItem.classList.add("answered");
+            navItem.style.fontWeight = "bold";
+            navItem.style.color = "white";
+            navItem.style.backgroundColor = "green";
+        }
+    }
+
+    // Cập nhật số câu đã làm
+    function updateQuestionStatus() {
+        let answered = 0;
+        for (let i = 0; i < totalQuestions; i++) {
+            const radios = document.getElementsByName("dap_an_" + i);
+            if (Array.from(radios).some(r => r.checked)) {
+                answered++;
+                markAnswered(i);
+            }
+        }
+
+        document.querySelector("#thongbao").innerHTML = `
+            <p>Số câu đã làm: <strong>${answered}/${totalQuestions}</strong></p>
+        `;
+    }
+
+    // Xử lý chọn đáp án
+    const inputs = document.querySelectorAll("input[type='radio']");
+    inputs.forEach(input => {
+        input.addEventListener("change", function () {
+            const name = this.name;
+            const index = name.split("_")[1];
+            localStorage.setItem(name, this.value);
+            markAnswered(index);
+            updateQuestionStatus();
+        });
+    });
+
+    // Nộp bài thủ công
+    form.addEventListener("submit", function (event) {
+        let allAnswered = true;
+        for (let i = 0; i < totalQuestions; i++) {
+            const radios = document.getElementsByName("dap_an_" + i);
+            if (!Array.from(radios).some(r => r.checked)) {
+                allAnswered = false;
+                break;
+            }
+        }
+
+        if (!allAnswered) {
+            event.preventDefault();
+            alert("Vui lòng trả lời tất cả các câu hỏi trước khi nộp bài!");
+        } else {
+            clearStorage();  // Xoá dữ liệu sau khi nộp bài
+            localStorage.setItem("hasSubmitted", "true");
+        }
+    });
+
+    // Đồng hồ đếm ngược
+    function updateTimer() {
+        const currentTime = Math.floor(Date.now() / 1000);
+        const elapsed = currentTime - startTime;
+        const remaining = timeLimit - elapsed;
+        const timerDisplay = document.querySelector("#thongbao1");
+
+        if (remaining <= 0 || localStorage.getItem("hasSubmitted") === "true") {
+            clearStorage();
+            localStorage.setItem("hasSubmitted", "true");
+            form.submit(); // tự động nộp bài
+        } else {
+            const minutes = Math.floor(remaining / 60);
+            const seconds = remaining % 60;
+            const timeText = `<p>Thời gian còn lại: <strong>${minutes}:${seconds.toString().padStart(2, '0')}</strong></p>`;
+
+            if (remaining <= 120) {
+                timerDisplay.innerHTML = `<p class="blink" style="color: red; font-weight: bold;">${timeText}</p>`;
+            } else {
+                timerDisplay.innerHTML = timeText;
+            }
+        }
+    }
+
+    // Khởi chạy
+    restoreAnswersFromStorage();
+    updateQuestionStatus();
+    updateTimer();
+    setInterval(updateTimer, 1000); // cập nhật mỗi giây
+});
+
+</script>
+</body>
+</html>
