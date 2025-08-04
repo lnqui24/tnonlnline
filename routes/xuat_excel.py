@@ -6,14 +6,22 @@ from io import BytesIO
 import zipfile
 from lxml import etree
 import os
+from functions import login_required
 
 xuat_excel_bp = Blueprint('xuat_excel', __name__)
 
 @xuat_excel_bp.route('/xuat_excel_baithi/<id_dethi>')
+@login_required
 def xuat_excel_baithi(id_dethi):
     # Kết nối CSDL
     conn = sqlite3.connect('student_info.db')
-    df = pd.read_sql_query("SELECT * FROM baithi WHERE id_dethi = ?", conn, params=(id_dethi,))
+    df = pd.read_sql_query('''
+        SELECT id, id_dethi, id_dethi_hv, id_hocsinh, hoten_hs, diem, lop_hs, truong,
+            ngay_lam, dap_an_lam, thoi_gian_lam, noidung_hv, trang_thai
+        FROM baithi
+        WHERE id_dethi = ?
+        ''', conn, params=(id_dethi,))
+
     conn.close()
 
     if 'id' in df.columns:
@@ -29,11 +37,11 @@ def xuat_excel_baithi(id_dethi):
         'hoten_hs': 'Họ tên học sinh',
         'lop_hs': 'Lớp',
         'truong': 'Trường',
+        'diem': 'Điểm',
         'ngay_lam': 'Ngày làm bài',
         'dap_an_lam': 'Đáp án đã chọn',
-        'diem': 'Điểm',
         'thoi_gian_lam': 'Thời gian làm (phút)',
-        'noidung_hv': 'Nội dung đề',
+        'noidung_hv': 'Nội dung đề HV',
         'trang_thai': 'Trạng thái'
     }, inplace=True)
 
@@ -54,9 +62,3 @@ def xuat_excel_baithi(id_dethi):
         }
     )
 
-# Test
-
-@xuat_excel_bp.route("/test", methods=["GET"])
-def test():
-    questions = read_questions_from_docx("de_test.docx","001")
-    return render_template('test.html', questions=questions)

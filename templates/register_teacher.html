@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Đăng ký giáo viên</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 40px;
+        }
+        .form-box {
+            max-width: 450px;
+            margin: auto;
+            border: 1px solid #ccc;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        input[type="text"], input[type="submit"] {
+            width: 95%;
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+        }
+        input[type="submit"] {
+            width: 50%;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+        }
+        .flash {
+            color: red;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="form-box">
+        <h2>Đăng ký giáo viên</h2>
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            <div class="flash">
+              {% for msg in messages %}
+                <p>{{ msg }}</p>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
+        <form method="post" action="/register-teacher">
+            <label for="name">Tên giáo viên:</label>
+            <input type="text" id="name" name="name" required>
+
+            <label for="username">Username:</label>
+            <p style="text-align: left; margin: 0; font-size: 10px; color: red;">Dùng để đăng nhập hệ thống.</p>
+            <input type="text" id="username" name="username" required>
+
+            <label for="school">Trường:</label>
+            <input type="text" id="school" name="school" required>
+
+            <label for="sdt">Số điện thoại:</label>
+            <input type="text" id="sdt" name="sdt" required>
+
+            <input type="submit" value="Đăng ký" style="text-align: center;">
+        </form>
+    </div>
+</body>
+</html>

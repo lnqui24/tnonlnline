@@ -7,19 +7,19 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
-    onload="renderMathInElement(document.body, {
-      delimiters: [
-        {left: '$$', right: '$$', display: true},
-        {left: '\\(', right: '\\)', display: false},
-        {left: '$', right: '$', display: false}
-      ]
-    });"></script>
-    <style>
-
+        onload="renderMathInElement(document.body, {
+        delimiters: [
+            {left: '$$', right: '$$', display: true},
+            {left: '\\(', right: '\\)', display: false},
+            {left: '$', right: '$', display: false}
+        ]
+        });">
+    </script>
+<style>
     #panel {
         max-width: 24vw;
         margin: 2vw auto;
-        padding: 30px;
+        padding: 10px;
         background-color: #f9f9f9;
         border-radius: 12px;
         box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
@@ -65,9 +65,23 @@
         font-size: 16px;
         transition: background-color 0.3s ease;
     }
+    .previewAll {
+        padding: 10px 20px;
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 16px;
+        transition: background-color 0.3s ease;
+    }
+    .previewAll:hover {
+        padding: 10px 20px;
+        background-color: #31e337;
+    }
 
     input[type="submit"]:hover {
-        background-color: #45a049;
+        background-color: #31e337;
     }
 
     h2.panel-title {
@@ -81,10 +95,12 @@
         background-color: #f9f9f9;
         display: flex;
         align-items: center;
-        margin: 8px 0;
+        margin: 8px 20px; 
+        margin-left: 20px;
         cursor: pointer;
         font-size: 16px;
     }
+
      .custom-radio:hover{
         background-color: antiquewhite;
      }
@@ -113,7 +129,12 @@
         border: 2px solid #4CAF50;
     }
     
-    </style>
+    .ans {
+    color: rgb(74, 12, 245);
+    font-weight: bold;
+    margin-left: -40px;  /* Đây là khoảng lệch trái như bạn yêu cầu */
+}
+</style>
 </head>
 <body>
     <h2 style="text-align: center;">Đề thi: <b style="color: red;">{{ id_dethi }}</b></h2>
@@ -123,27 +144,36 @@
                 <div class="question-block" id="q{{num_q}}">
                     <p class="question-title"><strong>Câu {{ loop.index }}.</strong></p>
                     <div class="question-content">
-                        {% for text in questions[num_q].question %}
+                        {% for text in questions[num_q].question.split("\n") if text %}
                             {% if text.startswith("[static/images") %}
-                                <img src="{{ url_for('static', filename=text[8:-1]) }} " style="display: block; margin: 0 auto;" alt="Hình ảnh câu hỏi">
+                                <textarea name="question_{{ num_q }}_{{ loop.index0 }}" style="display: none; width: 96%; padding: 5px; margin-bottom: 5px; border-radius: 5px;" oninput="autoResize(this)">{{ text }}</textarea>
+                                <img data-question="{{ num_q }}" data-sub="{{ loop.index0 }}" src="{{ url_for('static', filename=text[8:-1]) }} " style="display: block; margin: 3px auto; border: 1px solid;" alt="Hình ảnh câu hỏi">
                             {% else %}
-                                <textarea class="question-text" style="width: 100%;">{{ text }}</textarea>
-                            {% endif %}
+                                <!-- <textarea class="question-text" style="width: 100%; border-radius: 5px; background: #ecf6e9;">{{ text }}</textarea> -->
+                                <!-- <p data-question="{{ num_q }}" data-sub="{{ loop.index0 }}" class="question-text" style="background: #ecf6e9; border-radius: 5px; padding: 8px; margin-bottom: 5px; width: 96%;">{{ text }}</p> -->
+                                 <textarea name="question_{{ num_q }}_{{ loop.index0 }}" class="question-text" style="width: 96%; padding: 8px; margin-bottom: 5px; border-radius: 5px;" oninput="autoResize(this)">{{ text }}</textarea>
+                                <div class="katex-preview" style="margin: 6px 0 14px 0; padding: 6px;"></div>
+                             {% endif %}
                         {% endfor %}
                     </div>
-
                     <div class="options">
                         {% for option in questions[num_q].options %}
-                            <label class="custom-radio">
+                            <label class="custom-radio" >
                                 <input type="radio" name="dap_an_{{ num_q }}" value="{{ 'ABCD'[loop.index0] }}"
                                     {% if dap_an and dap_an[num_q] == 'ABCD'[loop.index0] %}checked{% endif %}>
                                 <span class="radio-mark">{{ 'ABCD'[loop.index0] }}</span>
-                                <textarea style="width: 100%;">{{ option }}</textarea>
+                                <!-- <p style="width: 100%; border-radius: 5px; background-color: beige;">{{ option }}</p> -->
+                                {% if option.startswith("[static/images") %}
+                                    <textarea name="option_{{ num_q }}_{{ loop.index0 }}" style="width: 96%; padding: 8px; margin-bottom: 5px; border-radius: 5px; display: none;" >{{ option }}</textarea>
+                                    <img  data-option="{{ num_q }}" data-sub="{{ loop.index0 }}" src="{{ url_for('static', filename=option[8:-1]) }} " style="display: block; border: 1px solid; margin: 2px; " alt="Hình ảnh đáp án {{ num_q }}">
+                                {% else %}
+                                    <textarea class="option-text" type="text" name="option_{{ num_q }}_{{ loop.index0 }}" style="width: 100%; padding: 4px; background-color: beige; border-radius: 5px;">{{ option }}</textarea>
+                                {% endif %}
                                 {% if dap_an and dap_an[num_q] == 'ABCD'[loop.index0] %}
-                                    <span style="color: green; font-weight: bold; margin-left: 10px;">← Đáp án đúng</span>
+                                    <span class="ans" style="color: green; font-weight: bold; margin-left: 10px; white-space: nowrap;">Đáp án</span>
                                 {% endif %}
                             </label>
-
+                            <div class="katex-preview-option" style="margin: 6px 10px 14px 0; padding: 6px; width: 90%; padding: 4px;padding-left: 60px;"></div>
                         {% endfor %}
                     </div>
             </div>
@@ -176,7 +206,10 @@
                                 {% if 'Trường' in xt_list %}checked{% endif %}> Trường </label>
                         </div>
                     </div>
-                    <input type="submit" value="Lưu đáp án">
+                    <div class="bton" style="text-align: center; border:1px dashed goldenrod; margin: 5px; border-radius: 5px;">
+                        <button style="margin-top: 10px;" type="button" class="previewAll" onclick="previewAll()">👁️ Xem trước</button>
+                        <input type="submit" value="Lưu đáp án">
+                    </div>
                 </div>
                 {% with messages = get_flashed_messages(with_categories=true) %}
                     {% if messages %}
@@ -195,5 +228,55 @@
                 {% endwith %}
         </div>
     </form>
+<script>
+        function previewAll() {
+            // Preview câu hỏi
+            const questions = document.querySelectorAll('.question-text');
+            const previews = document.querySelectorAll('.katex-preview');
+
+            questions.forEach((textarea, i) => {
+                previews[i].innerHTML = textarea.value;
+                renderMathInElement(previews[i], {
+                    delimiters: [
+                        {left: "\\(", right: "\\)", display: false},
+                        {left: "\\[", right: "\\]", display: true},
+                        {left: "$$", right: "$$", display: true},
+                        {left: "$", right: "$", display: false}
+                    ],
+                    throwOnError: false
+                });
+            });
+
+            // Preview đáp án
+            const options = document.querySelectorAll('.option-text');
+            const optionPreviews = document.querySelectorAll('.katex-preview-option');
+
+            options.forEach((input, i) => {
+                optionPreviews[i].innerHTML = input.value;
+                renderMathInElement(optionPreviews[i], {
+                    delimiters: [
+                        {left: "\\(", right: "\\)", display: false},
+                        {left: "\\[", right: "\\]", display: true},
+                        {left: "$$", right: "$$", display: true},
+                        {left: "$", right: "$", display: false}
+                    ],
+                    throwOnError: false
+                });
+            });
+        }
+
+        function autoResize(textarea) {
+            textarea.style.height = 'auto'; // reset chiều cao để tính lại
+            textarea.style.height = textarea.scrollHeight + 'px';
+        }
+
+        // Nếu muốn tất cả textarea auto resize khi load trang
+        window.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.question-text').forEach(autoResize);
+            document.querySelectorAll('.option-text').forEach(autoResize);
+    });
+
+</script>
+
 </body>
 </html>

@@ -308,9 +308,11 @@ input[type="radio"]:checked {
 }
 
 /* ======= Phần responsive cho mobile ======= */
-@media (max-width: 1200px) {
+@media (max-width: 1000px) {
     body{
         font-size: 20px;
+        overscroll-behavior: contain; /* Hạn chế cuộn vượt quá và refresh */
+        touch-action: pan-y; 
     }
     #contain {
         flex-direction: column; /* Đổi từ ngang sang dọc */
@@ -367,7 +369,7 @@ input[type="radio"]:checked {
     }
 
     #panel {
-        position: fixed;
+        position: relative;
         width: 95%;
         max-height: none;
         border-radius: 10px;

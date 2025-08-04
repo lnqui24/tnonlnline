@@ -24,10 +24,24 @@
             text-align: center;
             color: #2c3e50;
             margin-bottom: 25px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        h3{
+            text-align: center;
+            color: red;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
         }
 
         p {
             font-size: large;
+        }
+
+        .lien_he{
+            font-size: 13px;
+            color: red;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+            text-align: left;
         }
 
         span {
@@ -41,9 +55,10 @@
             margin-bottom: 8px;
             color: #34495e;
             font-size: large;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
         }
 
-        input[type="text"] {
+        #ma_dethi{
             width: 100%;
             padding: 16px; /* tăng padding để làm khung cao hơn */
             border: 1px solid #ccc;
@@ -53,6 +68,28 @@
             margin-bottom: 20px;
             text-align: center; /* căn giữa nội dung nếu muốn */
             font-family: Consolas, monospace;
+        }
+
+        .form-container input[type="text"]{
+            width: 100%;
+            padding: 16px; /* tăng padding để làm khung cao hơn */
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 22px; /* tăng size chữ ở đây */
+            box-sizing: border-box;
+            margin-bottom: 20px;
+            text-align: center; /* căn giữa nội dung nếu muốn */
+            font-family: Consolas, monospace;
+        }
+
+        .form-container #username, #password {
+            width: 100%;
+            padding: 16px; /* tăng padding để làm khung cao hơn */
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 16px; /* tăng size chữ ở đây */
+            box-sizing: border-box;
+            margin-bottom: 20px;
         }
 
         button{

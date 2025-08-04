@@ -10,4 +10,5 @@ main_bp = Blueprint('main', __name__)
 
 @main_bp.route("/")
 def index():
-    return redirect(url_for('upload.danh_sach_de_thi'))
+    # return redirect(url_for('upload.danh_sach_de_thi'))
+    return redirect(url_for('xuli_dethi.lam_bai'))

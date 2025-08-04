@@ -9,6 +9,9 @@ from routes.upload import upload_bp
 from routes.xuli_dethi import xuli_dethi_bp
 from routes.cham_bai import cham_bai_bp
 from routes.xuat_excel import xuat_excel_bp
+from routes.ad_login import ad_login_bp
+from routes.re_teachers import re_teachers_bp
+
 
 from docx_reader import read_questions_from_docx
 
@@ -33,6 +36,16 @@ def init_db():
         name TEXT,
         class TEXT,
         school TEXT
+    )''')
+
+    c.execute('''CREATE TABLE IF NOT EXISTS teachers (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT,
+        password TEXT,
+        name TEXT,
+        school TEXT,
+        sdt TEXT,
+        status INTEGER DEFAULT 1
     )''')
 
     # Tạo bảng dethi nếu chưa có
@@ -98,6 +111,9 @@ app.register_blueprint(upload_bp)
 app.register_blueprint(xuli_dethi_bp)
 app.register_blueprint(cham_bai_bp)
 app.register_blueprint(xuat_excel_bp)
+app.register_blueprint(ad_login_bp)
+app.register_blueprint(re_teachers_bp)
+
 init_db()
 if __name__ == "__main__":
     init_db()

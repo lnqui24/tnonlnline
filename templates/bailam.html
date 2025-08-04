@@ -31,40 +31,49 @@
             display: flex;
             justify-content: center;
         }
+        .preview_bl:hover{
+            color: red;
+        }
     </style>
 </head>
 <body>
 <!-- menu -->
     <div class="navbar">
-    <a href="{{ url_for('upload.danh_sach_de_thi') }}">Trang Chủ</a>
-    <div class="subnav">
-        <button class="subnavbtn">Quản lí đề thi <i class="fa fa-caret-down"></i></button>
-        <div class="subnav-content">
-        <a href="../upload">Tạo đề thi</a>
-        <!-- <a href="#team">Team</a>
-        <a href="#careers">Careers</a> -->
-        </div>
-    </div>
-    <div class="subnav">
-        <button class="subnavbtn">Người dùng <i class="fa fa-caret-down"></i></button>
-        <div class="subnav-content">
-        <a href="{{ url_for('users.users') }}">Danh sách người dùng</a>
-        <!-- <a href="#deliver">Deliver</a>
-        <a href="#package">Package</a>
-        <a href="#express">Express</a> -->
-        </div>
-    </div>
-    <!-- <div class="subnav">
-        <button class="subnavbtn">Partners <i class="fa fa-caret-down"></i></button>
-        <div class="subnav-content">
-        <a href="#link1">Link 1</a>
-        <a href="#link2">Link 2</a>
-        <a href="#link3">Link 3</a>
-        <a href="#link4">Link 4</a>
-        </div>
-    </div> -->
-    <a href="{{ url_for('xuli_dethi.lam_bai') }}">Vào Thi</a>
-    <a href="#contact">Liên hệ</a>
+        <div class="menu-left">
+            <a href="{{ url_for('upload.danh_sach_de_thi') }}">Trang Chủ</a>
+            <div class="subnav">
+                <button class="subnavbtn">Quản lí đề thi <i class="fa fa-caret-down"></i></button>
+                <div class="subnav-content">
+                <a href="../upload">Tạo đề thi</a>
+                <!-- <a href="#team">Team</a>
+                <a href="#careers">Careers</a> -->
+                </div>
+            </div>
+            <div class="subnav">
+                <button class="subnavbtn">Người dùng <i class="fa fa-caret-down"></i></button>
+                <div class="subnav-content">
+                <a href="{{ url_for('users.users') }}">Danh sách người dùng</a>
+                <!-- <a href="#deliver">Deliver</a>
+                <a href="#package">Package</a>
+                <a href="#express">Express</a> -->
+                </div>
+            </div>
+            <!-- <div class="subnav">
+                <button class="subnavbtn">Partners <i class="fa fa-caret-down"></i></button>
+                <div class="subnav-content">
+                <a href="#link1">Link 1</a>
+                <a href="#link2">Link 2</a>
+                <a href="#link3">Link 3</a>
+                <a href="#link4">Link 4</a>
+                </div>
+            </div> -->
+            <a href="{{ url_for('xuli_dethi.lam_bai') }}">Vào Thi</a>
+            <a href="#contact">Liên hệ</a>
+        </div> 
+           <div class="menu-right">
+                <span>👤 Xin chào, <strong>{{ username }}</strong></span>
+                <span><a href="{{ url_for('ad_login.logout') }}">Đăng xuất</a></span>
+            </div>
     </div>
 <!--  -->
     {% with messages = get_flashed_messages(with_categories=true) %}
@@ -146,7 +155,7 @@
                 <td>{{ thoi_gian_lam }}</td>
                 <td>{{ ngay_lam }}</td>
                 <!-- <td>{{ noidung }}</td> -->
-                 <td><a href="{{ url_for('xuli_dethi.xem_baithi', id_dethi_hv=id_dethi_hv) }}" target="_blank">Xem bài</a></td>
+                 <td><a class="preview_bl" href="{{ url_for('xuli_dethi.xem_baithi', id_dethi_hv=id_dethi_hv) }}" target="_blank">Xem bài</a></td>
                 <td>
                     {% if trang_thai == "Đã chấm lại" %}
                         ♻️
@@ -197,11 +206,15 @@ function capNhatBangBaiLam() {
                     <td style="white-space: nowrap;">${item.hoten || "..."}</td>
                     <td>${item.lop || "..."}</td>
                     <td>${item.truong || "..."}</td>
-                    <td><span style="color: red;">${item.diem !== null ? item.diem : "<i>Chưa chấm</i>"}</span></td>
+                    <td>
+                        <span style="color: red;">
+                            ${item.diem !== null ? item.diem.toFixed(1) : "<i>Chưa chấm</i>"}
+                        </span>
+                    </td>
                     <td>${item.dap_an_lam}</td>
                     <td>${item.thoi_gian_lam}</td>
                     <td>${item.ngay_lam}</td>
-                    <td><a href="/xem_baithi/${item.id_dethi_hv}">Xem bài</a></td>
+                    <td><a class="preview_bl" href="/xem_baithi/${item.id_dethi_hv}">Xem bài</a></td>
                     <td>${item.trang_thai === "Đã chấm lại"
                             ? "♻️"
                             : item.trang_thai === "Đã nộp bài"

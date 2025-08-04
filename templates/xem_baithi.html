@@ -32,6 +32,8 @@
             padding: 20px;
             margin-bottom: 25px;
             background-color: #f9f9f9;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            
         }
         .question-title {
             font-weight: bold;
@@ -68,6 +70,11 @@
             background-color: #eef3fa;
             border-radius: 10px;
         }
+        .img{
+            border: 1px solid;
+            display: block;
+            margin: 0 auto;
+        }
     </style>
 </head>
 <body>
@@ -89,10 +96,10 @@
         <div class="question-title">
             Câu {{ loop.index }}:
             <div class="question-content">
-                {% for item in q.question %}
+                {% for item in q.question.split("\n") %}
                     {% if item.startswith('[') and item.endswith(']') %}
                         {% set image_path = item[1:-1] %}
-                        <img src="{{ url_for('static', filename=image_path.split('static/')[-1]) }}" alt="Hình minh họa">
+                        <img class="img" src="{{ url_for('static', filename=image_path.split('static/')[-1]) }}" alt="Hình minh họa">
                     {% else %}
                         <p>{{ item }}</p>
                     {% endif %}
@@ -108,7 +115,13 @@
                 <div class="option 
                             {% if is_correct %}correct{% elif is_chosen %}incorrect{% endif %} 
                             {% if is_chosen %}selected{% endif %}">
-                    <strong>{{ opt_letter }}.</strong> {{ opt }}
+                    <strong>{{ opt_letter }}.</strong> 
+                    {% if opt.startswith('[') and opt.endswith(']') %}
+                        {% set image_path = opt[1:-1] %}
+                        <img src="{{ url_for('static', filename=image_path.split('static/')[-1]) }}" alt="Hình minh họa">
+                    {% else %}
+                        {{ opt }}
+                    {% endif %}
                     {% if is_chosen_correct %} <strong style="font-weight: bold; margin-left: 10px;">←  Đúng </strong> ✅{% endif %}
                     {% if is_chosen and not is_correct %} ❌{% endif %}
                 </div>

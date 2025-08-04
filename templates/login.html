@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8" />
+    <title>Nhập mã đề thi</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/styles_lam_bai.css') }}" /> 
+</head>
+<body>
+    <div class="form-container">
+        <h2>🔐 Admin Panel</h2>
+        <h3>Hệ Thống Kiểm Tra Online</h3>
+        <form method="POST" action="/admincp" id="formAdmin">
+            <label for="username">👤Tên Đăng nhập</label>
+            <input type="text" id="username" name="username" required autofocus title="Vui lòng nhập tên đăng nhập." />
+            <label for="password">🔑Mật khẩu</label>
+            <input type="password" id="password" name="password" required autofocus title="Mật khẩu." />
+            <button type="submit">Xác nhận</button>
+        </form>
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <div class="message error" id="thongbao">
+                    {% for msg in messages %}
+                        {{ msg }}
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+        <p class="lien_he">📞Nếu quên mật khẩu vui lòng liên hệ 0982203048(LNQ)</p>
+    </div>
+
+    <script>
+        setTimeout(function() {
+            var flash = document.getElementById('thongbao');
+            if (flash) { flash.style.display = 'none'; }
+        }, 3000);
+    </script>
+</body>
+</html>

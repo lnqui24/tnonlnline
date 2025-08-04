@@ -40,8 +40,14 @@ a {
 /* menu */
 /* The navigation menu */
 .navbar {
-overflow: hidden;
-background-color: rgb(237, 233, 150);
+/* overflow: hidden;
+background-color: rgb(237, 233, 150); */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: rgb(237, 233, 150);
+    padding: 0 20px;
+    flex-wrap: wrap;
 }
 
 /* Navigation links */
@@ -104,6 +110,36 @@ color: rgb(224, 157, 157);
 .subnav:hover .subnav-content {
 display: block;
 }
+
+.menu-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.menu-right {
+    display: flex;
+    align-items: center;
+    font-size: 15px;
+    font-weight: bold;
+    color: #c0392b;
+    white-space: nowrap;
+}
+
+.menu-right a {
+    color: #007BFF;
+    text-decoration: none;
+    margin-left: 8px;
+}
+
+.menu-right a:hover {
+    text-decoration: underline;
+}
+.menu-right > span{
+    text-align: center;
+    margin: 0;
+}
+
 .quay-ve-btn {
     display: inline-block;
     padding: 1px 5px;

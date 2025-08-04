@@ -1,12 +1,12 @@
-from flask import Blueprint, render_template, request, current_app
-from flask import redirect, url_for, flash
+from flask import Blueprint, render_template, request, current_app, jsonify
+from flask import redirect, url_for, flash, session
 from werkzeug.utils import secure_filename
 from docx_reader_math import (read_questions_from_docx, InvalidDocxFile, FileLockedError, XMLParseError)
 from datetime import datetime
-import os, sqlite3,json
+import os, sqlite3, json
 import random, glob
 import string
-import json
+from functions import login_required
 
 upload_bp = Blueprint('upload', __name__)
 
@@ -46,17 +46,35 @@ def add_dethi_to_db(id: str, ten_dethi:str, so_cau:int, dap_an:str, time: int, i
     conn.close()
 
 @upload_bp.route('/upload', methods=['GET', 'POST'])
+@login_required
 def upload():
+    print(">>> METHOD:", request.method)
     if request.method == 'POST':
+        print(">>> FORM đã gửi")
         file = request.files['file']
-        
         random_suffix = generate_random_suffix()
         original_name, ext = os.path.splitext(secure_filename(file.filename))
+
+        if ext != '.docx':
+            flash("File word không đúng định dạng, chỉ nhận file docx","error")
+            return redirect(url_for('upload.upload'))
+
         new_filename = f"{original_name}_{random_suffix}{ext}"
         filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], new_filename)
-        file.save(filepath)
+        # file.save(filepath)
+
         try:
-            questions = read_questions_from_docx(filepath,random_suffix)
+            file.save(filepath)
+        except PermissionError as e:
+            flash("Không thể ghi file vì đang bị khóa (có thể đang mở trong Word).", "error")
+            return redirect(url_for('upload.upload'))
+        except Exception as e:
+            flash(f"Lỗi khi lưu file: {str(e)}", "error")
+            return redirect(url_for('upload.upload'))
+
+        try:
+            # questions = read_questions_from_docx(filepath,random_suffix)
+            questions = read_questions_from_docx(filepath)
         except (InvalidDocxFile, FileLockedError, XMLParseError) as e:
             flash(f"Lỗi khi đọc file đề thi: {str(e)}", 'error')
             return redirect(url_for('upload.upload'))
@@ -83,7 +101,45 @@ def upload():
             return render_template('preview.html', questions=questions, id_dethi=random_suffix, dap_an = dap_an, xt_list=xt_list)
     return render_template('upload.html')
 
+@upload_bp.route('/upload_api', methods=['POST'])
+@login_required
+def upload_api():
+    file = request.files.get('file')
+    if not file:
+        return jsonify(success=False, error="Không có file"), 400
+
+    original_name, ext = os.path.splitext(secure_filename(file.filename))
+    if ext != '.docx':
+        return jsonify(success=False, error="Chỉ chấp nhận file .docx"), 400
+
+    random_suffix = generate_random_suffix()
+    new_filename = f"{original_name}_{random_suffix}{ext}"
+    filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], new_filename)
+
+    try:
+        file.save(filepath)
+    except PermissionError:
+        return jsonify(success=False, error="❌ File đang mở ở ứng dụng khác!"), 500
+    except Exception as e:
+        return jsonify(success=False, error=f"Lỗi lưu file: {str(e)}"), 500
+
+    try:
+        # questions = read_questions_from_docx(filepath, random_suffix)
+        questions = read_questions_from_docx(filepath,random_suffix)
+    except Exception as e:
+        return jsonify(success=False, error=f"Lỗi đọc file: {str(e)}"), 500
+    if len(questions) < 1:
+        return jsonify(success=False, error=f"Không có câu hỏi trong file hoặc do sai cấu trúc!"), 500
+    try:
+        dap_an = "A" * len(questions)
+        add_dethi_to_db(random_suffix, "", len(questions), dap_an, 30, 0, questions)
+        return jsonify(success=True, id_dethi=random_suffix, so_cau=len(questions)), 200
+    except Exception as e:
+        return jsonify(success=False, error=f"Lỗi lưu DB: {str(e)}"), 500
+
+
 @upload_bp.route('/save_dethi', methods=['POST'])
+@login_required
 def save_exam_info():
     dap_an1 = ""
     idx = 0
@@ -120,6 +176,39 @@ def save_exam_info():
     except ValueError:
         time = 30
 
+    # Parse câu hỏi
+    questions = []
+    q_index = 0
+    while True:
+        # Gom các dòng text của câu hỏi
+        lines = []
+        line_idx = 0
+        while f"question_{q_index}_{line_idx}" in request.form:
+            line_text = request.form[f"question_{q_index}_{line_idx}"].strip()
+            lines.append(line_text)
+            line_idx += 1
+
+        if not lines:
+            break
+
+        # Gom đáp án
+        options = []
+        for i in range(4):  # A/B/C/D
+            opt_key = f"option_{q_index}_{i}"
+            options.append(request.form.get(opt_key, '').strip())
+
+        # Đáp án đúng
+        dap_an_raw = request.form.get(f"dap_an_{q_index}", 'A')
+        dap_an_index = 'ABCD'.index(dap_an_raw) if dap_an_raw in 'ABCD' else 0
+
+        questions.append({
+            'question': '\n'.join(lines),
+            'options': options,
+            'answer': dap_an_index
+        })
+
+        q_index += 1
+
     # Cập nhật vào CSDL
         
     conn = sqlite3.connect('student_info.db')
@@ -134,7 +223,7 @@ def save_exam_info():
     row = c.fetchone()
     if row and row['noidung']:
         try:
-            questions = json.loads(row['noidung'])
+            # questions = json.loads(row['noidung'])
             for i, ch in enumerate(dap_an1):
                 if i < len(questions):
                     index = "ABCD".find(ch.upper())  # Chuyển 'A' → 0, 'B' → 1, ...
@@ -164,7 +253,9 @@ def save_exam_info():
     # return render_template("success.html", message="Đã lưu đề thi thành công.")
 
 @upload_bp.route('/quanli_dethi', methods=['GET'])
+@login_required
 def danh_sach_de_thi():
+    username = session.get("username", "Ẩn danh")
     search_id = request.args.get('search_id', '').strip()
 
     conn = sqlite3.connect('student_info.db')
@@ -193,9 +284,10 @@ def danh_sach_de_thi():
         # 
     rows = c.fetchall()
     conn.close()
-    return render_template('quanli_dethi.html', dethi_list=rows)
+    return render_template('quanli_dethi.html', dethi_list=rows, username=username)
 
 @upload_bp.route('/de/<id_dethi>', methods=['GET', 'POST'])
+@login_required
 def chinh_sua_de(id_dethi):
     conn = sqlite3.connect('student_info.db')
     c = conn.cursor()
@@ -259,6 +351,7 @@ def chinh_sua_de(id_dethi):
         return f"Không tìm thấy đề thi có mã: {id_dethi}", 404
     
 @upload_bp.route('/xoa_de/<id_dethi>', methods=['GET'])
+@login_required
 def xoa_de(id_dethi):
     conn = sqlite3.connect('student_info.db')
     c = conn.cursor()
@@ -268,17 +361,18 @@ def xoa_de(id_dethi):
     conn.close()
     # Xoa hình ảnh của đề
     image_folder = os.path.join('static', 'images')
-    pattern = os.path.join(image_folder, f'image_{id_dethi}_*.jpg')
+    pattern = os.path.join(image_folder, f'image_{id_dethi}_*.*')
     for image_path in glob.glob(pattern):
         try:
             os.remove(image_path)
         except Exception as e:
-            print(f"Không thể xoá ảnh {image_path}: {e}")
+            flash(f"Không thể xoá ảnh {image_path}: {e}")
     # return render_template("success.html", message=f"Đã xoá đề thi có mã: {id_dethi}")
     flash(f'Đã xoá đề thi có mã: {id_dethi}', 'success')
     return redirect(url_for('upload.danh_sach_de_thi'))
 
 @upload_bp.route('/khoa_mo_de/<id_dethi>')
+@login_required
 def toggle_khoa_de(id_dethi):
     conn = sqlite3.connect('student_info.db')
     c = conn.cursor()

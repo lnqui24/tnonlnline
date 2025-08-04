@@ -1,171 +1,258 @@
+import os
+import re
+import uuid
+import zipfile
 from docx import Document
-import os, re, zipfile
-import xml.etree.ElementTree as ET
+from flask import flash, redirect, url_for, render_template
+from xml.etree import ElementTree as ET
 class InvalidDocxFile(Exception): pass
 class FileLockedError(Exception): pass
 class XMLParseError(Exception): pass
 
+# Thư mục lưu ảnh
+IMAGE_FOLDER = 'static/images'
+os.makedirs(IMAGE_FOLDER, exist_ok=True)
+
+# Namespace
 NS = {
     'w': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main',
+    'a': 'http://schemas.openxmlformats.org/drawingml/2006/main',
+    'r': 'http://schemas.openxmlformats.org/officeDocument/2006/relationships',
+    'wp': 'http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing',
     'm': 'http://schemas.openxmlformats.org/officeDocument/2006/math'
 }
 
-def omml_to_latex(node):
-    if node is None:
-        return ""
-    tag = node.tag.split('}')[-1]
-    if tag == 'r':
-        return ''.join(omml_to_latex(child) for child in node)
-    elif tag == 't':
-        return node.text
-    # elif tag == 'sSup':
-    #     base = omml_to_latex(node.find('m:e', NS))
-    #     sub = omml_to_latex(node.find('m:sup', NS))
-    #     return f"{base}^{{{sub}}}"
-    # elif tag == 'sSub':
-    #     base = omml_to_latex(node.find('m:e', NS))
-    #     sub = omml_to_latex(node.find('m:sub', NS))
-    #     return f"{base}_{{{sub}}}"
-    if tag == 'sSup':     # mũ
-        base = omml_to_latex(node.find('m:e', NS))
-        sup  = omml_to_latex(node.find('m:sup', NS))
-        return f"{base}^{{{sup}}}"
+# Trích xuất ảnh
+def extract_images(docx_path, code):
+    image_map = {}
+    with zipfile.ZipFile(docx_path) as docx_zip:
+        rels_path = 'word/_rels/document.xml.rels'
+        if rels_path not in docx_zip.namelist():
+            return {}
 
-    if tag == 'sSub':     # chỉ số dưới
-        base = omml_to_latex(node.find('m:e', NS))
-        sub  = omml_to_latex(node.find('m:sub', NS))
-        return f"{base}_{{{sub}}}"
+        rels_root = ET.parse(docx_zip.open(rels_path)).getroot()
+        rels = {r.attrib['Id']: r.attrib['Target'] for r in rels_root if 'Id' in r.attrib}
 
-    elif tag == 'nary':
-        # chr_node = node.find('m:chr', NS)
-        chr_node = node.find('m:naryPr/m:chr', NS)
-        symbol = chr_node.attrib.get(f'{{{NS["m"]}}}val', '') if chr_node is not None else ''
-        sub = omml_to_latex(node.find('m:sub', NS))
-        sup = omml_to_latex(node.find('m:sup', NS))
-        expr_nodes = node.findall('m:e', NS)
-        expr = ' '.join(omml_to_latex(e) for e in expr_nodes)
-        if symbol == '∑':
-            return f"\\sum_{{{sub}}}^{{{sup}}} {expr}"
+        document = ET.parse(docx_zip.open('word/document.xml')).getroot()
+        drawings = document.findall('.//w:drawing', NS)
+
+        cnt_img = 0
+        for drawing in drawings:
+            cnt_img = cnt_img + 1
+            blip = drawing.find('.//a:blip', NS)
+            if blip is not None:
+                r_id = blip.attrib.get(f'{{{NS["r"]}}}embed')
+                if r_id and r_id in rels:
+                    image_part = rels[r_id]
+                    if image_part.startswith('media/'):
+                        img_data = docx_zip.read(f'word/{image_part}')
+                        ext = os.path.splitext(image_part)[-1]
+                        # name = f"image_{uuid.uuid4().hex[:8]}{ext}"
+                        name = f"image_{code}_{cnt_img}{ext}"
+                        path = os.path.join(IMAGE_FOLDER, name)
+                        with open(path, 'wb') as f:
+                            f.write(img_data)
+                        image_map[r_id] = f"[static/images/{name}]"
+    return image_map
+
+# Lấy text trong công thức
+def get_omml_text(el):
+    return ''.join(t.text for t in el.iter() if t.tag.endswith('t') and t.text)
+
+# Chuyển OMML thành LaTeX
+def omml_to_latex(omml):
+    def parse_node(node):
+        if node is None: return ""
+        tag = node.tag.split('}')[-1]
+
+        if tag == "f":
+            num = parse_node(node.find('m:num', NS))
+            den = parse_node(node.find('m:den', NS))
+            return f"\\frac{{{num}}}{{{den}}}"
+        elif tag == "sSup":
+            base = parse_node(node.find('m:e', NS))
+            sup = parse_node(node.find('m:sup', NS))
+            return f"{base}^{{{sup}}}"
+        elif tag == "sSub":
+            base = parse_node(node.find('m:e', NS))
+            sub = parse_node(node.find('m:sub', NS))
+            return f"{base}_{{{sub}}}"
+        elif tag == "sSubSup":
+            base = parse_node(node.find('m:e', NS))
+            sub = parse_node(node.find('m:sub', NS))
+            sup = parse_node(node.find('m:sup', NS))
+            return f"{base}_{{{sub}}}^{{{sup}}}"
+        elif tag == "rad":
+            deg = parse_node(node.find('m:deg', NS))
+            e = parse_node(node.find('m:e', NS))
+            return f"\\sqrt[{deg}]{{{e}}}" if deg else f"\\sqrt{{{e}}}"
+        elif tag == "nary":
+            # Tìm biểu tượng ∫, ∑, ∏ trong naryPr
+            chr_node = node.find('m:naryPr/m:chr', NS)
+            symbol = chr_node.attrib.get(f'{{{NS["m"]}}}val', '') if chr_node is not None else ''
+            sub = parse_node(node.find('m:sub', NS))
+            sup = parse_node(node.find('m:sup', NS))
+            expr_nodes = node.findall('m:e', NS)
+            expr = ' '.join(parse_node(e) for e in expr_nodes)
+
+            # map biểu tượng sang LaTeX
+            if symbol == '∑':
+                return f"\\sum_{{{sub}}}^{{{sup}}} {expr}"
+            elif symbol == '∏':
+                return f"\\prod_{{{sub}}}^{{{sup}}} {expr}"
+            elif symbol == '∫':
+                return f"\\int_{{{sub}}}^{{{sup}}} {expr}"
+            else:
+                return f"\\int_{{{sub}}}^{{{sup}}} {expr}"
+
+        elif tag == "bar":
+            return f"\\overline{{{parse_node(node.find('m:e', NS))}}}"
+        elif tag == "box":
+            return f"\\boxed{{{parse_node(node.find('m:e', NS))}}}"
+        elif tag == "r":
+            return get_omml_text(node)
+        elif tag == "t":
+            return node.text or ""
         else:
-            return f"\\int_{{{sub}}}^{{{sup}}} {expr}"
-    elif tag == 'f':
-        num = omml_to_latex(node.find('m:num', NS))
-        den = omml_to_latex(node.find('m:den', NS))
-        return f"\\frac{{{num}}}{{{den}}}"
-    elif tag == 'rad':
-        base = omml_to_latex(node.find('m:e', NS))
-        deg = node.find('m:deg', NS)
-        if deg is not None:
-            deg_val = omml_to_latex(deg)
-            return f"\\sqrt[{deg_val}]{{{base}}}"
-        return f"\\sqrt{{{base}}}"
-    else:
-        return ''.join(omml_to_latex(child) for child in node)
+            return ''.join(parse_node(child) for child in node)
+    latex = parse_node(omml)
+    return f"\\({latex}\\)" if latex else ""
 
-def extract_equations_from_paragraph(para_element):
-    PUNCT_START = (",", ".", ":", ";", "!", "?", ")", "]")
-    latex_text = []
+# Trích xuất nội dung từ đoạn văn, bao gồm công thức, ảnh, chỉ số mũ
+# def extract_text_with_latex(p, image_map):
+#     result = []
+#     for child in p._element:
+#         tag = child.tag.split('}')[-1]
+#         if tag == "r":
+#             drawing = child.find('.//w:drawing', NS)
+#             omath = child.find('.//m:oMath', NS)
+#             t_el = child.find('.//w:t', NS)
+#             vert = child.find('.//w:vertAlign', NS)
+#             if drawing is not None:
+#                 blip = drawing.find('.//a:blip', NS)
+#                 if blip is not None:
+#                     r_id = blip.attrib.get(f'{{{NS["r"]}}}embed')
+#                     if r_id in image_map:
+#                         result.append(image_map[r_id])
+#             elif omath is not None:
+#                 result.append(omml_to_latex(omath))
+#             elif t_el is not None:
+#                 if vert is not None and vert.attrib.get(f'{{{NS["w"]}}}val') == 'superscript':
+#                     result.append(f"^{{{t_el.text}}}")
+#                 else:
+#                     result.append(t_el.text)
+#         elif tag == "oMath":
+#             result.append(omml_to_latex(child))
+#         elif tag == "oMathPara":
+#             for om in child.findall('.//m:oMath', NS):
+#                 result.append(omml_to_latex(om))
+#     return ''.join(result).strip()
+# ct mới###################
 
-    # Xử lý văn bản thường + chỉ số
-    for run in para_element.findall('.//w:r', NS):
-        t_node = run.find('.//w:t', NS)
-        if t_node is not None and t_node.text:
-            text = t_node.text
-            if (latex_text
-                and not latex_text[-1].endswith(" ")
-                and not text.startswith((" ",) + PUNCT_START)):
-                latex_text.append(" ")
-            vert = run.find('.//w:vertAlign', NS)
-            if vert is not None:
-                align = vert.attrib.get(f'{{{NS["w"]}}}val')
-                if align == 'superscript':
-                    latex_text.append(f"\\(^{text}\\)")
-                elif align == 'subscript':
-                    latex_text.append(f"\\(_{text}\\)")
+def extract_text_with_latex(p, image_map):
+    result = []
+
+    for child in p._element:
+        tag = child.tag.split('}')[-1]
+        if tag == "r":
+            drawing = child.find('.//w:drawing', NS)
+            omath = child.find('.//m:oMath', NS)
+            t_el = child.find('.//w:t', NS)
+            vert = child.find('.//w:vertAlign', NS)
+            if drawing is not None:
+                # blip = drawing.find('.//a:blip', NS)
+
+                blip = None
+                # Duyệt sâu toàn bộ drawing để tìm blip theo kiểu "hữu cơ"
+                for el in drawing.iter():
+                    if el.tag.endswith('blip') and f'{{{NS["r"]}}}embed' in el.attrib:
+                        blip = el
+                        break
+
+                if blip is not None:
+                    r_id = blip.attrib.get(f'{{{NS["r"]}}}embed')
+                    if r_id in image_map:
+                        result.append(image_map[r_id])
+
+            elif omath is not None:
+                result.append(omml_to_latex(omath))
+
+            elif t_el is not None:
+                text = t_el.text or ""
+                if vert is not None:
+                    val = vert.attrib.get(f'{{{NS["w"]}}}val')
+                    if val == 'superscript':
+                        if result:
+                            prev = result.pop()
+                            # result.append(f"\\{prev}^{{{text}}}")
+                            result.append(f"\\({prev}^{{{text}}}\\)")
+
+                        else:
+                            result.append(f"^{{{text}}}")
+                    elif val == 'subscript':
+                        if result:
+                            prev = result.pop()
+                            # result.append(f"\\{prev}_{{{text}}}")
+                            result.append(f"\\({prev}_{{{text}}}\\)")
+
+                        else:
+                            result.append(f"_{{{text}}}")
+                    else:
+                        result.append(text)
                 else:
-                    latex_text.append(text)
-            else:
-                latex_text.append(text)
+                    result.append(text)
 
-    # Công thức OMML vẫn bọc nguyên đoạn
-    for run in para_element.findall(".//m:oMath", NS):
-        latex = omml_to_latex(run)
-        if latex:
-            latex_text.append(f"\\({latex}\\)")
+        elif tag == "oMath":
+            result.append(omml_to_latex(child))
 
-    return ''.join(latex_text)
+        elif tag == "oMathPara":
+            for om in child.findall('.//m:oMath', NS):
+                result.append(omml_to_latex(om))
 
-def read_questions_from_docx(file_path, code, image_folder="static/images"):
-    if not zipfile.is_zipfile(file_path):
-        raise InvalidDocxFile("File không đúng định dạng .docx hoặc bị lỗi.")
-    try:
-        doc = Document(file_path)   
-    except KeyError as e:
-        raise InvalidDocxFile("Không thể đọc file docx, file có thể bị lỗi hoặc không đúng định dạng!") from e
+    return ''.join(result).strip()
+
+# Hàm chính
+def read_questions_from_docx(docx_path, code):
+    image_map = extract_images(docx_path,code)
+    doc = Document(docx_path)
     questions = []
-    current_question = {
-        "question": [],
-        "options": [],
-        "answer": None
-    }
+    current_question = []
+    options = []
+    answer = 0
 
-    if not os.path.exists(image_folder):
-        os.makedirs(image_folder)
+    for para in doc.paragraphs:
+        full_text = extract_text_with_latex(para, image_map)
+        if not full_text:
+            continue
+        if re.match(r"^Câu\s+\d+", full_text, re.IGNORECASE):
+            if current_question and len(options) >= 4:
+                questions.append({
+                    "question": current_question,
+                    "options": [op for op in options if len(op)],
+                    "answer": answer
+                })
 
-    # Đọc XML gốc để lấy cấu trúc sup/sub + equation
-    try:
-        with zipfile.ZipFile(file_path) as docx:
-            with docx.open("word/document.xml") as f:
-                tree = ET.parse(f)
-                xml_root = tree.getroot()
-    except ET.ParseError as e:
-        raise XMLParseError("Không thể phân tích cấu trúc XML trong file Word.") from e
-    except KeyError:
-        raise XMLParseError("Thiếu thành phần word/document.xml trong file docx.")
-    
-    xml_paragraphs = xml_root.findall('.//w:body/w:p', NS)
-
-    for para, para_xml in zip(doc.paragraphs, xml_paragraphs):
-        text = para.text.strip()
-        combined = extract_equations_from_paragraph(para_xml)
-        if combined:
-            if not re.match(r"^[A-D]\.", combined):
-                combined = re.sub(r"^Câu\s*\d+[.:]?", "", combined)
-                current_question["question"].append(combined.strip())
-                pending_option_line = ""
+            full_text = re.sub(r"^Câu\s*\d+[.:]?", "", full_text)
+            full_text = full_text.strip()
+            current_question = [full_text]
+            options = []
+        elif re.match(r"^[A-D]\.", full_text):
+            parts = re.split(r"(?=[A-D]\.)", full_text)
+            for part in parts:
+                if re.match(r"^[A-D]\.", part):
+                    options.append(part[2:].strip())                    
+        elif len(options) < 4:
+            if len(options) == 0:
+                current_question.append(full_text)
             else:
-                pending_option_line += " " + combined.strip()
-                #options_found = re.findall(r"[A-D]\.\s*([^A-D]*)", pending_option_line)
-                #options_found = re.findall(r"[A-D]\.\s*(.*?)(?=\s+[A-D]\.|$)", pending_option_line)
-                # options_found = re.findall(r"[A-D]\.\s*(.*?)(?=\s*[A-D]\.|$)",pending_option_line)
-                options_found = re.findall(r"[A-D]\s*\.\s*(.*?)(?=\s*[A-D]\s*\.\s*|$)",pending_option_line)
-                if len(options_found) >= 4:
-                    current_question["options"].extend([opt.strip() for opt in options_found[:4]])
-                    # current_question['options'] = options_found.copy()
-                    questions.append(current_question)
-                    current_question = {"question": [], "options": [], "answer": None}
-                    pending_option_line = ""
-
-        # Xử lý ảnh trong đoạn văn
-        for run in para.runs:
-            if run.element.xml.find('<w:drawing>') != -1:
-                cnt_img = len([f for f in os.listdir(image_folder) if f.startswith(f"image_{code}")]) + 1
-                image_data = run._element.xpath('.//a:blip')[0].get(
-                    "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed"
-                )
-                image_part = doc.part.related_parts[image_data]
-                image_path = f"{image_folder}/image_{code}_{cnt_img}.jpg"
-                with open(image_path, "wb") as img_file:
-                    img_file.write(image_part.blob)
-                current_question["question"].append("[" + image_path + "]")
-
-        if len(current_question["options"]) == 4:
-            questions.append(current_question)
-            current_question = {
-                "question": [],
-                "options": [],
-                "answer": None
-            }
-    if not questions:
-        raise InvalidDocxFile("Không tìm thấy câu hỏi hợp lệ trong file.")
-    return questions    
+                options.append(full_text)
+    if current_question and len(options) >= 4:
+        print(current_question)
+        questions.append({
+            "question": current_question,
+            "options": [op for op in options if len(op)],
+            "answer": answer
+        })
+    for q in questions:
+        q['question'] = "\n".join(q['question'])
+    return questions

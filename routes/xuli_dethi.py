@@ -9,6 +9,7 @@ import string
 import sqlite3
 from datetime import datetime
 import json
+from functions import login_required
 
 xuli_dethi_bp = Blueprint('xuli_dethi', __name__)
 
@@ -59,6 +60,7 @@ def generate_random_suffix(length = 6):
     return ''.join(random.choices(string.ascii_lowercase + string.digits, k=length))
 
 @xuli_dethi_bp.route('/xuli_dethi')
+@login_required
 def xuli_dethi():
     return render_template("xuli_dethi.html", message="Đã lưu đề thi thành công.")
 
@@ -71,7 +73,9 @@ def update_answers(questions, answer_str):
     return questions
 
 @xuli_dethi_bp.route('/bailam/<id_dethi>')
+@login_required
 def bailam(id_dethi):
+    username = session.get('username',"Ẩn danh")
     conn = sqlite3.connect('student_info.db')
     c = conn.cursor()
 
@@ -95,7 +99,7 @@ def bailam(id_dethi):
     return render_template(
         'bailam.html', id_dethi=id_dethi, so_hs=so_hs, 
         so_hs_chuanop = so_hs_chuanop,
-        ket_qua=ket_qua, ten_dethi=ten_dethi)
+        ket_qua=ket_qua, ten_dethi=ten_dethi, username=username)
 
 @xuli_dethi_bp.route('/lam_bai', methods=['GET', 'POST'])
 def lam_bai():
@@ -215,6 +219,7 @@ def thi():
     )
 
 @xuli_dethi_bp.route('/xoa_bai_lam', methods=['POST'])
+@login_required
 def xoa_bai_lam():
     id_dethi_hv = request.form.get('id_dethi_hv')
     id_dethi = request.form.get('id_dethi')
@@ -283,7 +288,7 @@ def nopbai():
             total_correct += 1
 
     # Tính điểm (ví dụ: mỗi câu 1 điểm)
-    diem = round(10 * total_correct / len(questions_with_answers), 2)
+    diem = round(10 * total_correct / len(questions_with_answers), 1)
 
     # # Lưu lại vào bảng baithi
     # dap_an_lam_json = json.dumps(answers_hs)
@@ -329,6 +334,7 @@ def api_lay_baithi(id_dethi):
     return jsonify(data)
 
 @xuli_dethi_bp.route('/xem_baithi/<id_dethi_hv>')
+@login_required
 def xem_baithi(id_dethi_hv):
     conn = sqlite3.connect('student_info.db')
     conn.row_factory = sqlite3.Row

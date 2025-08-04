@@ -4,47 +4,97 @@
     <meta charset="UTF-8">
     <title>Danh sách đề thi</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/styles_quanli_dethi.css') }}">
+    <style>
+        #flash-message-wrapper {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .flash-message {
+            padding: 10px 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            opacity: 0;
+            animation: fadeInOut 6s ease-in-out forwards;
+            min-width: 220px;
+            max-width: 300px;
+            word-wrap: break-word;
+            font-size: 15px;
+        }
+
+        .flash-message.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .flash-message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .flash-message.warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
+
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateY(-10px); }
+            10% { opacity: 1; transform: translateY(0); }
+            90% { opacity: 1; }
+            100% { opacity: 0; transform: translateY(-100px); }
+        }
+    </style>
 </head>
 <body>
     <!-- menu -->
     <div class="navbar">
-    <a href="{{ url_for('upload.danh_sach_de_thi') }}">Trang Chủ</a>
-    <div class="subnav">
-        <button class="subnavbtn">Quản lí đề thi <i class="fa fa-caret-down"></i></button>
-        <div class="subnav-content">
-        <a href="../upload">Tạo đề thi</a>
-        <!-- <a href="#team">Team</a>
-        <a href="#careers">Careers</a> -->
-        </div>
-    </div>
-    <div class="subnav">
-        <button class="subnavbtn">Người dùng <i class="fa fa-caret-down"></i></button>
-        <div class="subnav-content">
-        <a href="{{ url_for('users.users') }}">Danh sách người dùng</a>
-        <!-- <a href="#deliver">Deliver</a>
-        <a href="#package">Package</a>
-        <a href="#express">Express</a> -->
-        </div>
-    </div>
-    <!-- <div class="subnav">
-        <button class="subnavbtn">Partners <i class="fa fa-caret-down"></i></button>
-        <div class="subnav-content">
-        <a href="#link1">Link 1</a>
-        <a href="#link2">Link 2</a>
-        <a href="#link3">Link 3</a>
-        <a href="#link4">Link 4</a>
-        </div>
-    </div> -->
-    <a href="{{ url_for('xuli_dethi.lam_bai') }}">Vào Thi</a>
-    <a href="#contact">Liên hệ</a>
-    
+        <div class="menu-left">
+            <a href="{{ url_for('upload.danh_sach_de_thi') }}">Trang Chủ</a>
+            <div class="subnav">
+                <button class="subnavbtn">Quản lí đề thi <i class="fa fa-caret-down"></i></button>
+                <div class="subnav-content">
+                <a href="../upload">Tạo đề thi</a>
+                <!-- <a href="#team">Team</a>
+                <a href="#careers">Careers</a> -->
+                </div>
+            </div>
+            <div class="subnav">
+                <button class="subnavbtn">Người dùng <i class="fa fa-caret-down"></i></button>
+                <div class="subnav-content">
+                <a href="{{ url_for('users.users') }}">Danh sách người dùng</a>
+                <!-- <a href="#deliver">Deliver</a>
+                <a href="#package">Package</a>
+                <a href="#express">Express</a> -->
+                </div>
+            </div>
+            <!-- <div class="subnav">
+                <button class="subnavbtn">Partners <i class="fa fa-caret-down"></i></button>
+                <div class="subnav-content">
+                <a href="#link1">Link 1</a>
+                <a href="#link2">Link 2</a>
+                <a href="#link3">Link 3</a>
+                <a href="#link4">Link 4</a>
+                </div>
+            </div> -->
+            <a href="{{ url_for('xuli_dethi.lam_bai') }}">Vào Thi</a>
+            <a href="#contact">Liên hệ</a>
+        </div> 
+           <div class="menu-right">
+                <span>👤 Xin chào, <strong>{{ username }}</strong></span>
+                <span><a href="{{ url_for('ad_login.logout') }}">Đăng xuất</a></span>
+            </div>
     </div>
      <!--  -->
     <h2 style="color: red;">Danh sách đề thi</h2>
     <!-- Thông báo flash -->
     {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
-        <div id="flash-message" style="
+        <!-- <div id="flash-message" style="
                 position: fixed;
                 top: 20px;
                 right: 20px;
@@ -55,11 +105,13 @@
                 border-radius: 8px;
                 box-shadow: 0 2px 5px rgba(0,0,0,0.2);
                 opacity: 0;
-                transition: opacity 0.3s;">
+                transition: opacity 0.3s;"> -->
+        <div id="flash-message-wrapper">
         {% for category, message in messages %}
-            <div style="display: inline-block; padding: 10px 20px; border-radius: 6px;
+            <!-- <div style="display: inline-block; padding: 10px 20px; border-radius: 6px;
                         background-color: {{ 'lightgreen' if category == 'success' else '#f8d7da' }};
-                        color: {{ 'green' if category == 'success' else '#721c24' }};">
+                        color: {{ 'green' if category == 'success' else '#721c24' }};"> -->
+            <div class="flash-message {{ category }}">
             {{ message }}
             </div>
         {% endfor %}
@@ -204,7 +256,6 @@ function showCopiedMessage(text) {
         setTimeout(() => msg.remove(), 300);
     }, 2500);
 }
-
 
 window.addEventListener('DOMContentLoaded', () => {
     const flash = document.getElementById('flash-message');

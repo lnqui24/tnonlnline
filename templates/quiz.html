@@ -46,9 +46,9 @@
                 <div class="question-block" id="q{{num_q}}">
                     <p class="question-title"><strong>Câu {{ loop.index }}.</strong></p>
                     <div class="question-content">
-                        {% for text in questions[num_q].question %}
+                        {% for text in questions[num_q].question.split("\n") if text %}
                             {% if text.startswith("[static/images") %}
-                                <img src="{{ url_for('static', filename=text[8:-1]) }} " style="display: block; margin: 0 auto;" alt="Hình ảnh câu hỏi">
+                                <img src="{{ url_for('static', filename=text[8:-1]) }} " style="display: block; margin: 0 auto; border: 1px solid;" alt="Hình ảnh câu hỏi">
                             {% else %}
                                 <p class="question-text">{{ text }}</p>
                             {% endif %}
@@ -57,11 +57,15 @@
 
                     <div class="options">
                         {% for option in questions[num_q].options %}
-                            <label class="custom-radio">
+                            <label class="custom-radio" style="border: 1px dashed gold; border-radius: 5px;">
                                 <input type="radio" name="dap_an_{{ num_q }}" value="{{ 'ABCD'[loop.index0] }}"
                                     {% if dap_an and dap_an[num_q] == 'ABCD'[loop.index0] %}checked{% endif %}>
                                 <span class="radio-mark">{{ 'ABCD'[loop.index0] }}</span>
-                                {{ option }}
+                                {% if option.startswith("[static/images") %}
+                                    <img src="{{ url_for('static', filename=option[8:-1]) }} " style="display: block;border: 1px solid gold;" alt="Hình ảnh đáp án">
+                                {% else %}
+                                    {{ option }}
+                                {% endif %}
                                 {% if dap_an and dap_an[num_q] == 'ABCD'[loop.index0] %}
                                     <span style="color: green; font-weight: bold; margin-left: 10px;">← Đáp án đúng</span>
                                 {% endif %}
@@ -207,6 +211,7 @@ document.addEventListener("DOMContentLoaded", function () {
     updateQuestionStatus();
     updateTimer();
     setInterval(updateTimer, 1000); // cập nhật mỗi giây
+
 });
 
 </script>

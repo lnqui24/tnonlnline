@@ -90,26 +90,78 @@
             color: #721c24;
             border: 1px solid #f5c6cb;
         }
+
+        #flash-message-wrapper {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .flash-message {
+            padding: 10px 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            opacity: 0;
+            animation: fadeInOut 3.5s ease-in-out forwards;
+            min-width: 220px;
+            max-width: 300px;
+            word-wrap: break-word;
+            font-size: 15px;
+        }
+
+        .flash-message.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .flash-message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .flash-message.warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
+
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateY(-10px); }
+            10% { opacity: 1; transform: translateY(0); }
+            85% { opacity: 1; }
+            100% { opacity: 0; transform: translateY(-10px); }
+        }
+
+
     </style>
 </head>
 <body>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+    <div id="flash-message-wrapper">
+        {% for category, message in messages %}
+        <div class="flash-message {{ category }}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+{% endif %}
+{% endwith %}
+
+    
     <div id="tieude">
         <h2 style="font-size: 50px;">Kéo thả file Word (.docx) vào khung bên</h2>
         <a href="{{ url_for('upload.danh_sach_de_thi') }}" class="quay-ve-btn">Quay về</a>
     </div>
-    <div id="drop-area">
-         {% with messages = get_flashed_messages(with_categories=true) %}
-          {% if messages %}
-            {% for category, message in messages %}
-              <div class="flash-message alert-{{ category }}">
-                {{ message }}
-              </div>
-            {% endfor %}
-          {% endif %}
-        {% endwith %}
 
-        <form method="POST" enctype="multipart/form-data">
-            <input type="file" name="file" id="fileElem" accept=".docx" style="display:none" onchange="form.submit()">
+    <div id="drop-area">
+        <form id="uploadForm" method="POST" enctype="multipart/form-data" action="{{ url_for('upload.upload') }}">
+            <input type="file" name="file" id="fileElem" accept=".docx" style="display:none">
             <label for="fileElem" style="cursor: pointer; font-size: 40px;">Nhấn để chọn file hoặc kéo thả vào đây</label>
         </form>
     </div>
@@ -126,7 +178,34 @@
             e.stopPropagation();
         }
 
-        dropArea.addEventListener('drop', handleDrop, false);
+        //dropArea.addEventListener('drop', handleDrop, false);
+
+        dropArea.addEventListener('drop', async function (e) {
+        e.preventDefault();
+        let files = e.dataTransfer.files;
+        if (files.length === 0) return;
+
+        let formData = new FormData();
+        formData.append('file', files[0]);
+
+        try {
+            const res = await fetch('/upload_api', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await res.json();
+
+            if (res.ok && data.success) {
+                window.location.href = `/de/${data.id_dethi}`;
+            } else {
+                showFlashMessage(`❌ Lỗi khi upload: ${data.error}`, "error");
+            }
+
+        } catch (err) {
+            showFlashMessage("❌ Lỗi gửi file: " + err.message + ", có thể file docx đang mở", "error");
+        }
+        });
 
         function handleDrop(e) {
             let dt = e.dataTransfer;
@@ -137,14 +216,36 @@
             form.submit();
         }
 
-        setTimeout(() => {
-    document.querySelectorAll('.flash-message').forEach(msg => {
-        msg.style.transition = 'opacity 0.8s ease';
-        msg.style.opacity = '0';
-        setTimeout(() => msg.remove(), 800);
-    });
-}, 4000);
+        window.addEventListener('DOMContentLoaded', () => {
+            const messages = document.querySelectorAll('.flash-message');
+            messages.forEach(msg => {
+                setTimeout(() => {
+                    msg.remove();
+                }, 5000);
+            });
+        });
 
+    document.getElementById('fileElem').addEventListener('change', function () {
+            const files = this.files;
+            if (files.length === 0) return;
+
+            const form = document.getElementById('uploadForm');
+            form.submit();
+        });
+
+        function showFlashMessage(message, type = "success") {
+        const wrapper = document.getElementById('flash-message-wrapper') || (() => {
+            const w = document.createElement('div');
+            w.id = 'flash-message-wrapper';
+            document.body.appendChild(w);
+            return w;
+        })();
+        const msg = document.createElement('div');
+        msg.className = `flash-message ${type}`;
+        msg.textContent = message;
+        wrapper.appendChild(msg);
+        setTimeout(() => msg.remove(), 5000);
+    }
     </script>
 </body>
 </html>
