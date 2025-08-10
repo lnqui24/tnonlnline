@@ -30,7 +30,6 @@ if not os.path.exists(app.config['UPLOAD_FOLDER']):
 def init_db():
     conn = sqlite3.connect('student_info.db')
     c = conn.cursor()
-    conn.execute("PRAGMA foreign_keys = ON;")
 
     # Tạo bảng users nếu chưa có
     c.execute('''CREATE TABLE IF NOT EXISTS users (

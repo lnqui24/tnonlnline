@@ -19,7 +19,8 @@ NS = {
     'a': 'http://schemas.openxmlformats.org/drawingml/2006/main',
     'r': 'http://schemas.openxmlformats.org/officeDocument/2006/relationships',
     'wp': 'http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing',
-    'm': 'http://schemas.openxmlformats.org/officeDocument/2006/math'
+    'm': 'http://schemas.openxmlformats.org/officeDocument/2006/math',
+    'v': 'urn:schemas-microsoft-com:vml',
 }
 
 # Trích xuất ảnh
@@ -53,6 +54,30 @@ def extract_images(docx_path, code):
                         with open(path, 'wb') as f:
                             f.write(img_data)
                         image_map[r_id] = f"[static/images/{name}]"
+        
+    
+        # 2. Xử lý ảnh trong <w:pict>
+        picts = document.findall('.//w:pict', NS)
+        for pict in picts:
+            imagedata = pict.find('.//v:imagedata', NS)
+            if imagedata is not None:
+                # Lấy r:id hoặc r:id theo namespace r
+                r_id = imagedata.attrib.get(f'{{{NS["r"]}}}id')
+                if not r_id:
+                    r_id = imagedata.attrib.get('r:id')  # fallback
+                if r_id and r_id in rels:
+                    image_part = rels[r_id]
+                    if image_part.startswith('media/'):
+                        cnt_img += 1
+                        img_data = docx_zip.read(f'word/{image_part}')
+                        ext = os.path.splitext(image_part)[-1]
+                        name = f"image_{code}_{cnt_img}{ext}"
+                        path = os.path.join(IMAGE_FOLDER, name)
+                        os.makedirs(IMAGE_FOLDER, exist_ok=True)
+                        with open(path, 'wb') as f:
+                            f.write(img_data)
+                        image_map[r_id] = f"[static/images/{name}]"
+        
     return image_map
 
 # Lấy text trong công thức
@@ -156,6 +181,7 @@ def extract_text_with_latex(p, image_map):
         tag = child.tag.split('}')[-1]
         if tag == "r":
             drawing = child.find('.//w:drawing', NS)
+            picts = child.findall('.//w:pict', NS)
             omath = child.find('.//m:oMath', NS)
             t_el = child.find('.//w:t', NS)
             vert = child.find('.//w:vertAlign', NS)
@@ -173,6 +199,13 @@ def extract_text_with_latex(p, image_map):
                     r_id = blip.attrib.get(f'{{{NS["r"]}}}embed')
                     if r_id in image_map:
                         result.append(image_map[r_id])
+            elif picts:
+                for pict in picts:
+                    imagedata = pict.find('.//v:imagedata', NS)
+                    if imagedata is not None:
+                        r_id = imagedata.attrib.get(f'{{{NS["r"]}}}id') or imagedata.attrib.get('r:id')
+                        if r_id in image_map:
+                            result.append(image_map[r_id])
 
             elif omath is not None:
                 result.append(omml_to_latex(omath))
