@@ -7,14 +7,17 @@
 </head>
 <body>
     <div class="form-container">
-        <h2>🔐 Admin Panel</h2>
+        <h2>🔐 Đăng Nhập</h2>
         <h3>Hệ Thống Kiểm Tra Online</h3>
-        <form method="POST" action="/admincp" id="formAdmin">
+        <form method="POST" action="/login" id="formUser">
             <label for="username">👤Tên Đăng nhập</label>
             <input type="text" id="username" name="username" required autofocus title="Vui lòng nhập tên đăng nhập." />
             <label for="password">🔑Mật khẩu</label>
             <input type="password" id="password" name="password" required autofocus title="Mật khẩu." />
             <button type="submit">Xác nhận</button>
+            <button type="button" onclick="window.location.href='/lam_bai'" style="margin-top: 5px;">
+                Quay về trang làm bài
+            </button>
         </form>
         {% with messages = get_flashed_messages() %}
             {% if messages %}
@@ -25,7 +28,11 @@
                 </div>
             {% endif %}
         {% endwith %}
-        <p class="lien_he">📞Nếu quên mật khẩu vui lòng liên hệ 0982203048(LNQ)</p>
+        <div>
+        <p class="lien_he">📞Nếu quên mật khẩu vui lòng liên hệ <span class="lien_he" style="color: blue;" >0982203048(LNQ)</span>.</p>
+        <p class="lien_he" style="margin-bottom: 0px;">📢Nếu chưa có tài khoản vui lòng <a href="{{ url_for('re_teachers.register') }}">đăng ký</a>
+        <span class="lien_he" style="margin: 0px; text-indent: 10px;">, khi đăng ký hoàn tất vui lòng liên hệ <span class="lien_he" style="color: blue;" >Admin</span> để kích hoạt tài khoản!</span></p>
+        </div>
     </div>
 
     <script>

@@ -8,9 +8,13 @@
 </head>
 <body>
         <!-- menu -->
-    <div class="navbar">
-        <div class="menu-left">
-            <a href="{{ url_for('upload.danh_sach_de_thi') }}">Trang Chủ</a>
+         <div class="navbar">
+    <div class="menu-left">
+            {% if username_ss == "admin" %}
+                <a href="{{ url_for('ad_login.login') }}">Trang Chủ</a>
+            {% else %}
+                <a href="{{ url_for('upload.danh_sach_de_thi') }}">Trang Chủ</a>
+            {% endif %}
             <div class="subnav">
                 <button class="subnavbtn">Quản lí đề thi <i class="fa fa-caret-down"></i></button>
                 <div class="subnav-content">
@@ -22,9 +26,9 @@
             <div class="subnav">
                 <button class="subnavbtn">Người dùng <i class="fa fa-caret-down"></i></button>
                 <div class="subnav-content">
-                <a href="{{ url_for('users.users') }}">Danh sách người dùng</a>
-                <!-- <a href="#deliver">Deliver</a>
-                <a href="#package">Package</a>
+                <a href="{{ url_for('users.users') }}">Danh sách người dùng</a> 
+                <a href="{{ url_for('re_teachers.register_teacher') }}">Thêm mới</a>
+                <!-- <a href="#package">Package</a>
                 <a href="#express">Express</a> -->
                 </div>
             </div>
@@ -41,42 +45,109 @@
             <a href="#contact">Liên hệ</a>
         </div> 
            <div class="menu-right">
-                <span>👤 Xin chào, <strong>{{ username }}</strong></span>
-                <span><a href="{{ url_for('ad_login.logout') }}">Đăng xuất</a></span>
+                <span>👤 Xin chào, 
+                    <div id="usernameClick" style="display: inline;"><strong style="cursor:pointer; text-decoration: underline;">{{ username_ss }}</strong></div>
+                </span> <span><a href="{{ url_for('login.logout') }}">Đăng xuất</a></span>
             </div>
     </div>
 
-    <h1>Danh sách người dùng</h1>
+    <!-- flash -->
+         {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div id="flash-message-wrapper">
+                {% for category, message in messages %}
+                    <div class="flash-message {{ category }}">
+                    {{ message }}
+                    </div>
+                {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+    <!--  -->
+
+    <!-- form -->
+    <div id="form-reg">
+        <form method="post" action="/add-teacher">
+            <label for="name">Tên giáo viên:</label>
+            <input type="text" id="name" name="name" required>
+            <div>
+            <label for="username">Username:<br> <span style="color: red; font-size: 10px;">Dùng đăng nhập</span></label></div>
+            <input type="text" id="username" name="username" required>
+
+            <label for="school">Trường:</label>
+            <input type="text" id="school" name="school" required>
+
+            <label for="sdt">Số điện thoại:</label>
+            <input type="text" id="sdt" name="sdt" required>
+
+            <input type="submit" value="Đăng ký" style="text-align: center;">
+        </form>
+    </div>
+    <!--  -->
+
+    <h1>Danh sách tài khoản giáo viên</h1>
     <table border="1">
         <tr>
             <th>STT</th>
             <th>ID</th>
-            <th>Tên</th>
-            <th>Lớp</th>
+            <th>Username</th>
+            <th>Password</th>
+            <th>Họ và tên</th>
             <th>Trường</th>
-            <th>Thao tác</th>
+            <th>SĐT</th>
+            <th>Phân quyền</th>
         </tr>
         {% if users %}
             {% for user in users %}
-                <tr>
-                    <td>{{loop.index}}</td>
-                    <td>{{ user[0] }}</td>
-                    <td>{{ user[1] }}</td>
-                    <td>{{ user[2] }}</td>
-                    <td>{{ user[3] }}</td>
-                    <td>
-                        <form action="{{ url_for('users.delete_user', user_id=user[0]) }}" method="POST">
-                            <button type="submit">Xóa</button>
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td>{{ user.id }}</td>
+                <td>{{ user.username }}</td>
+                <td>{{ user.password }}</td>
+                <td>{{ user.name }}</td>
+                <td>{{ user.school }}</td>
+                <td>{{ user.sdt }}</td>
+                <td style="width: 24%;">
+                    
+                    {% if user.status == 1 %}
+                        👨‍🏫 Giáo viên
+                    {% elif user.status == 2 %}
+                        🐯 Quản trị viên
+                    {% elif user.status == 0 %}
+                        ❌ Đã khóa
+                    {% else %}
+                        ⚠️ Không xác định
+                    {% endif %}
+                    {% if user.status in [0, 1] %}
+                        <form action="{{ url_for('users.unlock_user' if user.status == 0 else 'users.lock_user', user_id=user.id) }}" method="POST" style="display: inline;">
+                            <button class="quay-ve-btn" type="submit" style="display: inline;" title="{% if user.status == 0 %}Đã khóa hoặc chưa được kích hoạt tài khoản{% endif %}">
+                                {{ "🔓 Mở khóa" if user.status == 0 else "🔒 Khóa" }}
+                            </button>
                         </form>
-                    </td>
-                </tr>
+                    {% endif %}
+                    {% if user.status in [0, 1] %}
+                    <form action="{{ url_for('users.repass', user_id=user.id) }}" method="post" style="display: inline;">
+                        <button class="quay-ve-btn" style="display:inline;" type="submit" onclick="return confirm('Bạn có chắc muốn đặt lại mật khẩu về 123456?')" title="Đặt lại mật khẩu là: 123456">
+                            Đặt lại mật khẩu
+                        </button>
+                    </form>
+                    {% endif %}
+                    {% if user.status in [0, 1] %}
+                    <form action="{{ url_for('users.delete_user', user_id=user.id) }}" method="POST" style="display: inline;">
+                            <button class="quay-ve-btn" type="submit" style="display: inline;" title="Xóa tài khoản {{ user.username }}">
+                                {{ "Xóa tài khoản" }}
+                            </button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
             {% endfor %}
             {% else %}
                 <tr>
                     <td colspan="9" style="text-align: center; font-style: italic; color: #666;">
                         Không có người dùng nào!</td>
                 </tr>
-            {% endif %}
+        {% endif %}
     </table>
     <div>
         {% if page > 1 %}
@@ -86,5 +157,114 @@
         <a href="{{ url_for('users.users', page=page+1) }}">{{page+1}}</a>
     </div>
     <a href="/">Quay lại trang chủ</a>
+
+
+<!-- form change-password -->
+ <div id="changePasswordModal" style="display:none; position: fixed; top:0; left:0; 
+    width:100%; height:100%; background: rgba(0,0,0,0.5); z-index:99999; justify-content:center; align-items:center;">
+    <div style="background:white; padding:20px; border-radius:10px; width:320px; position:relative;">
+        <h3>Đổi mật khẩu</h3>
+        <form method="POST" action="{{ url_for('users.change_password') }}">
+            <label>Mật khẩu hiện tại:</label>
+            <input type="password" name="old_password" required style="width:100%; padding:5px;"><br>
+            
+            <label>Mật khẩu mới:</label>
+            <input type="password" name="new_password" required style="width:100%; padding:5px;"><br>
+            
+            <label>Nhập lại mật khẩu mới:</label>
+            <input type="password" name="confirm_password" required style="width:100%; padding:5px;"><br>
+            
+            <button type="submit" style="padding:8px 15px;">Lưu thay đổi</button>
+            <button type="button" onclick="closeChangePasswordModal()" style="padding:8px 15px; background:#ccc;">Hủy</button>
+        </form>
+    </div>
+</div>
+<!--  -->
+
+<script>
+    setTimeout(function() {
+        var flash = document.getElementById('flash-message');
+        if (flash) {
+        flash.style.display = 'none';
+        }
+    }, 3000); // 5000 milliseconds = 5 giây
+
+    function copyToClipboard(text) {
+        if (!navigator.clipboard) {
+            // Fallback nếu trình duyệt cũ
+            const textarea = document.createElement("textarea");
+            textarea.value = text;
+            textarea.style.position = "fixed";
+            textarea.style.opacity = 0;
+            document.body.appendChild(textarea);
+            textarea.focus();
+            textarea.select();
+            try {
+                document.execCommand("copy");
+                showCopiedMessage(text);
+            } catch (err) {
+                console.error("Fallback copy failed", err);
+            }
+            document.body.removeChild(textarea);
+            return;
+        }
+
+        navigator.clipboard.writeText(text).then(function() {
+            showCopiedMessage(text);
+        }, function(err) {
+            console.error("Copy failed", err);
+        });
+    }
+
+    function showCopiedMessage(text) {
+        const msg = document.createElement("div");
+        msg.textContent = "✅ Đã copy mã đề: " + text;
+        msg.style.position = "fixed";
+        msg.style.top = "20px";
+        msg.style.right = "20px";
+        msg.style.background = "#4CAF50";
+        msg.style.color = "white";
+        msg.style.padding = "10px 15px";
+        msg.style.borderRadius = "8px";
+        msg.style.boxShadow = "0 2px 5px rgba(0,0,0,0.2)";
+        msg.style.zIndex = 9999;
+        msg.style.opacity = 0;
+        msg.style.transition = "opacity 0.3s";
+
+        document.body.appendChild(msg);
+
+        // Làm mờ và ẩn sau 2.5s
+        setTimeout(() => msg.style.opacity = 1, 10);
+        setTimeout(() => {
+            msg.style.opacity = 0;
+            setTimeout(() => msg.remove(), 300);
+        }, 2500);
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+        const flash = document.getElementById('flash-message');
+        if (flash) {
+            flash.style.opacity = 1;
+            setTimeout(() => {
+                flash.style.opacity = 0;
+                setTimeout(() => {
+                    flash.remove();
+                }, 500);
+            }, 3000); // hiện 3s rồi mờ dần
+        }
+    });
+
+document.addEventListener('DOMContentLoaded', function(){
+    document.getElementById('usernameClick').addEventListener('click', function(){
+        document.getElementById('changePasswordModal').style.display = 'flex';
+    });
+});
+
+function closeChangePasswordModal(){
+    document.getElementById('changePasswordModal').style.display = 'none';
+}
+
+</script>
+
 </body>
 </html>

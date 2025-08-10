@@ -11,6 +11,7 @@ from routes.cham_bai import cham_bai_bp
 from routes.xuat_excel import xuat_excel_bp
 from routes.ad_login import ad_login_bp
 from routes.re_teachers import re_teachers_bp
+from routes.login import login_bp
 
 
 from docx_reader import read_questions_from_docx
@@ -29,6 +30,7 @@ if not os.path.exists(app.config['UPLOAD_FOLDER']):
 def init_db():
     conn = sqlite3.connect('student_info.db')
     c = conn.cursor()
+    conn.execute("PRAGMA foreign_keys = ON;")
 
     # Tạo bảng users nếu chưa có
     c.execute('''CREATE TABLE IF NOT EXISTS users (
@@ -45,7 +47,8 @@ def init_db():
         name TEXT,
         school TEXT,
         sdt TEXT,
-        status INTEGER DEFAULT 1
+        status INT DEFAULT 1,
+        re_pw INT DEFAULT 0
     )''')
 
     # Tạo bảng dethi nếu chưa có
@@ -59,7 +62,9 @@ def init_db():
         action INTEGER CHECK(action IN (0, 1)),
         xt_hs TEXT,
         noidung TEXT,
-        time_create TEXT
+        time_create TEXT,
+        teacher_id INTEGER,
+        FOREIGN KEY (teacher_id) REFERENCES teachers(id) ON DELETE CASCADE
     )''')
 
     # tạo bảng baithi nếu chưa tồn tại
@@ -113,6 +118,7 @@ app.register_blueprint(cham_bai_bp)
 app.register_blueprint(xuat_excel_bp)
 app.register_blueprint(ad_login_bp)
 app.register_blueprint(re_teachers_bp)
+app.register_blueprint(login_bp)
 
 init_db()
 if __name__ == "__main__":

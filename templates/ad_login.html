@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<title>Nhập mã đề thi</title>
+<style>
+/* Hiệu ứng gradient động */
+body {
+    background: linear-gradient(-45deg, #ff9966, #ea999a, #81c8eb, #16222A);
+    background-size: 400% 400%;
+    animation: gradientShift 15s ease infinite;
+
+    /* Căn giữa form */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh; /* Chiếm toàn màn hình */
+    margin: 0;
+}
+
+@keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.form-container {
+    background: rgba(0, 0, 0, 0.4);
+    /* backdrop-filter: blur(10px); */ /* Có thể bật để hiệu ứng mờ nền đẹp hơn */
+    border-radius: 12px;
+    padding: 20px 30px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 
+        20px 20px 35px rgba(0, 0, 0, 0.4), /* bóng lớn, mờ */
+        8px 8px 15px rgba(0, 0, 0, 0.25);   /* bóng nhỏ, đậm hơn */
+}
+
+h2, h3 {
+    margin: 0 0 15px;
+    color: rgb(227, 210, 175);
+    text-align: center;
+    text-shadow: 0 0 10px #0ff, 0 0 20px #09f;
+}
+
+label {
+    display: block;
+    margin-top: 15px;
+    color: rgb(231, 160, 18);
+    text-shadow: 0 0 5px #0ff, 0 0 10px #09f;
+}
+
+input {
+    width: 95%;
+    padding: 10px;
+    margin-top: 5px;
+    border: none;
+    border-radius: 5px;
+    background: rgba(255,255,255,0.2);
+    color: white;
+    outline: none;
+}
+
+input:focus {
+    transform: scale(1.05);
+    box-shadow: 0 0 10px #0ff;
+    transition: 0.2s;
+}
+
+button {
+    margin-top: 20px;
+    width: 100%;
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    background: linear-gradient(45deg, #0ff, #09f);
+    color: rgb(231, 160, 18);
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 10px #0ff;
+}
+
+.message.error {
+    margin-top: 15px;
+    padding: 10px;
+    background-color: #ff4d4d;
+    border-radius: 5px;
+    text-align: center;
+}
+
+.lien_he {
+    margin-top: 15px;
+    font-size: 0.9em;
+    color: rgb(227, 210, 175);
+}
+</style>
+</head>
+<body>
+
+<div class="form-container" style="width: 400px;">
+    <h2>🔐 Admin Panel</h2>
+    <h3>Hệ Thống Kiểm Tra Online</h3>
+    <form method="POST" action="/admincp" id="formAdmin">
+        <label for="username">👤Tên Đăng nhập</label>
+        <input type="text" id="username" name="username" required autofocus />
+        <label for="password">🔑Mật khẩu</label>
+        <input type="password" id="password" name="password" required />
+        <button type="submit">Xác nhận</button>
+    </form>
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div class="message error" id="thongbao">
+                {% for msg in messages %}
+                    {{ msg }}
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+    <p class="lien_he">📞Nếu quên mật khẩu vui lòng liên hệ 0982203048(LNQ)</p>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const tb = document.getElementById("thongbao");
+    if (tb) {
+        setTimeout(() => {
+            tb.style.transition = "opacity 0.5s ease";
+            tb.style.opacity = "0";
+            setTimeout(() => tb.remove(), 500);
+        }, 4000);
+    }
+});
+</script>
+
+</body>
+</html>

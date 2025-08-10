@@ -9,7 +9,8 @@ import string
 import sqlite3
 from datetime import datetime
 import json
-from functions import login_required
+from functions import login_required, num_per_page
+from math import ceil
 
 xuli_dethi_bp = Blueprint('xuli_dethi', __name__)
 
@@ -74,32 +75,85 @@ def update_answers(questions, answer_str):
 
 @xuli_dethi_bp.route('/bailam/<id_dethi>')
 @login_required
+# def bailam(id_dethi):
+#     username = session.get('username',"Ẩn danh")
+#     conn = sqlite3.connect('student_info.db')
+#     c = conn.cursor()
+
+#     # Lấy số học sinh tham gia (đếm học sinh distinct trong baithi)
+#     c.execute('SELECT COUNT(DISTINCT id_dethi_hv) FROM baithi WHERE id_dethi = ?', (id_dethi,))
+#     so_hs = c.fetchone()[0]
+
+#     c.execute('SELECT COUNT(DISTINCT id_dethi_hv) FROM baithi WHERE id_dethi = ? AND diem is NULL' , (id_dethi,))
+#     so_hs_chuanop = c.fetchone()[0]
+
+#     c.execute('SELECT ten_dethi FROM dethi WHERE id = ?', (id_dethi,))
+#     ten_dethi = c.fetchone()[0]
+#     if ten_dethi == "":
+#         ten_dethi = "(Chưa nhập)"
+
+#     # Lấy chi tiết bài làm: id_hocsinh, điểm, thời gian làm, ngày làm, nội dung bài làm
+#     c.execute('SELECT id_hocsinh, id_dethi_hv, diem, thoi_gian_lam, dap_an_lam, ngay_lam, noidung_hv, hoten_hs, lop_hs, truong, trang_thai FROM baithi WHERE id_dethi = ?', (id_dethi,))
+#     ket_qua = c.fetchall()
+#     conn.close()
+
+#     return render_template(
+#         'bailam.html', id_dethi=id_dethi, so_hs=so_hs, 
+#         so_hs_chuanop = so_hs_chuanop,
+#         ket_qua=ket_qua, ten_dethi=ten_dethi, username=username)
+
+
 def bailam(id_dethi):
-    username = session.get('username',"Ẩn danh")
+    username = session.get('username', "Ẩn danh")
+    page = request.args.get('page', 1, type=int)  # Trang hiện tại
+    per_page = num_per_page  # Số bản ghi mỗi trang
+    offset = (page - 1) * per_page
+
     conn = sqlite3.connect('student_info.db')
     c = conn.cursor()
 
-    # Lấy số học sinh tham gia (đếm học sinh distinct trong baithi)
+    # Lấy số học sinh tham gia
     c.execute('SELECT COUNT(DISTINCT id_dethi_hv) FROM baithi WHERE id_dethi = ?', (id_dethi,))
     so_hs = c.fetchone()[0]
 
-    c.execute('SELECT COUNT(DISTINCT id_dethi_hv) FROM baithi WHERE id_dethi = ? AND diem is NULL' , (id_dethi,))
+    # Lấy số học sinh chưa nộp
+    c.execute('SELECT COUNT(DISTINCT id_dethi_hv) FROM baithi WHERE id_dethi = ? AND diem is NULL', (id_dethi,))
     so_hs_chuanop = c.fetchone()[0]
 
+    # Lấy tên đề thi
     c.execute('SELECT ten_dethi FROM dethi WHERE id = ?', (id_dethi,))
     ten_dethi = c.fetchone()[0]
-    if ten_dethi == "":
+    if not ten_dethi:
         ten_dethi = "(Chưa nhập)"
 
-    # Lấy chi tiết bài làm: id_hocsinh, điểm, thời gian làm, ngày làm, nội dung bài làm
-    c.execute('SELECT id_hocsinh, id_dethi_hv, diem, thoi_gian_lam, dap_an_lam, ngay_lam, noidung_hv, hoten_hs, lop_hs, truong, trang_thai FROM baithi WHERE id_dethi = ?', (id_dethi,))
+    # Đếm tổng số bài làm để tính số trang
+    c.execute('SELECT COUNT(*) FROM baithi WHERE id_dethi = ?', (id_dethi,))
+    total_rows = c.fetchone()[0]
+    total_pages = ceil(total_rows / per_page)
+
+    # Lấy chi tiết bài làm theo trang
+    c.execute('''
+        SELECT id_hocsinh, id_dethi_hv, diem, thoi_gian_lam, dap_an_lam,
+               ngay_lam, noidung_hv, hoten_hs, lop_hs, truong, trang_thai
+        FROM baithi
+        WHERE id_dethi = ?
+        LIMIT ? OFFSET ?
+    ''', (id_dethi, per_page, offset))
     ket_qua = c.fetchall()
+
     conn.close()
 
     return render_template(
-        'bailam.html', id_dethi=id_dethi, so_hs=so_hs, 
-        so_hs_chuanop = so_hs_chuanop,
-        ket_qua=ket_qua, ten_dethi=ten_dethi, username=username)
+        'bailam.html',
+        id_dethi=id_dethi,
+        so_hs=so_hs,
+        so_hs_chuanop=so_hs_chuanop,
+        ket_qua=ket_qua,
+        ten_dethi=ten_dethi,
+        username=username,
+        page=page,
+        total_pages=total_pages
+    )
 
 @xuli_dethi_bp.route('/lam_bai', methods=['GET', 'POST'])
 def lam_bai():

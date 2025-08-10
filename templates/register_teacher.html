@@ -2,32 +2,14 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/styles_lam_bai.css') }}" /> 
     <title>Đăng ký giáo viên</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            padding: 40px;
-        }
         .form-box {
             max-width: 450px;
             margin: auto;
-            border: 1px solid #ccc;
             border-radius: 12px;
             padding: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-        input[type="text"], input[type="submit"] {
-            width: 95%;
-            padding: 12px;
-            margin: 8px 0;
-            border-radius: 8px;
-            border: 1px solid #ccc;
-        }
-        input[type="submit"] {
-            width: 50%;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
         }
         .flash {
             color: red;
@@ -36,23 +18,26 @@
     </style>
 </head>
 <body>
-    <div class="form-box">
-        <h2>Đăng ký giáo viên</h2>
-        {% with messages = get_flashed_messages() %}
-          {% if messages %}
-            <div class="flash">
-              {% for msg in messages %}
-                <p>{{ msg }}</p>
-              {% endfor %}
-            </div>
-          {% endif %}
-        {% endwith %}
-        <form method="post" action="/register-teacher">
+    <div>    
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div id="flash-message-wrapper">
+            {% for category, message in messages %}
+                <div class="flash-message {{ category }}">
+                {{ message }}
+                </div>
+            {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+    <div class="form-container">
+            <h2>Đăng ký giáo viên</h2>
+        <form method="post" action="/register-teacher"> 
             <label for="name">Tên giáo viên:</label>
             <input type="text" id="name" name="name" required>
 
-            <label for="username">Username:</label>
-            <p style="text-align: left; margin: 0; font-size: 10px; color: red;">Dùng để đăng nhập hệ thống.</p>
+            <label for="username" style="margin-bottom: 0px;">Username:</label>
+            <p style="text-align: left; margin: 5px; font-size: 12px; color: red;">Dùng để đăng nhập hệ thống. Mật khẩu mặc định là 123456</p>
             <input type="text" id="username" name="username" required>
 
             <label for="school">Trường:</label>
@@ -61,8 +46,86 @@
             <label for="sdt">Số điện thoại:</label>
             <input type="text" id="sdt" name="sdt" required>
 
-            <input type="submit" value="Đăng ký" style="text-align: center;">
+            <button type="submit">Đăng ký</button><br><br>
+            <div class="login-link-wrapper">
+                <a href="{{ url_for('login.login') }}" class="login-link">Đăng nhập</a>
+            </div>
         </form>
     </div>
+    <script>
+  setTimeout(function() {
+    var flash = document.getElementById('flash-message');
+    if (flash) {
+      flash.style.display = 'none';
+    }
+  }, 3000); // 5000 milliseconds = 5 giây
+
+
+function copyToClipboard(text) {
+    if (!navigator.clipboard) {
+        // Fallback nếu trình duyệt cũ
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        textarea.style.position = "fixed";
+        textarea.style.opacity = 0;
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        try {
+            document.execCommand("copy");
+            showCopiedMessage(text);
+        } catch (err) {
+            console.error("Fallback copy failed", err);
+        }
+        document.body.removeChild(textarea);
+        return;
+    }
+
+    navigator.clipboard.writeText(text).then(function() {
+        showCopiedMessage(text);
+    }, function(err) {
+        console.error("Copy failed", err);
+    });
+}
+
+function showCopiedMessage(text) {
+    const msg = document.createElement("div");
+    msg.textContent = "✅ Đã copy mã đề: " + text;
+    msg.style.position = "fixed";
+    msg.style.top = "20px";
+    msg.style.right = "20px";
+    msg.style.background = "#4CAF50";
+    msg.style.color = "white";
+    msg.style.padding = "10px 15px";
+    msg.style.borderRadius = "8px";
+    msg.style.boxShadow = "0 2px 5px rgba(0,0,0,0.2)";
+    msg.style.zIndex = 9999;
+    msg.style.opacity = 0;
+    msg.style.transition = "opacity 0.3s";
+
+    document.body.appendChild(msg);
+
+    // Làm mờ và ẩn sau 2.5s
+    setTimeout(() => msg.style.opacity = 1, 10);
+    setTimeout(() => {
+        msg.style.opacity = 0;
+        setTimeout(() => msg.remove(), 300);
+    }, 2500);
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+    const flash = document.getElementById('flash-message');
+    if (flash) {
+        flash.style.opacity = 1;
+        setTimeout(() => {
+            flash.style.opacity = 0;
+            setTimeout(() => {
+                flash.remove();
+            }, 500);
+        }, 3000); // hiện 3s rồi mờ dần
+    }
+});
+
+</script>
 </body>
 </html>

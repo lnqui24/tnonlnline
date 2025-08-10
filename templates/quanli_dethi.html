@@ -4,57 +4,16 @@
     <meta charset="UTF-8">
     <title>Danh sách đề thi</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/styles_quanli_dethi.css') }}">
-    <style>
-        #flash-message-wrapper {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 9999;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        .flash-message {
-            padding: 10px 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            opacity: 0;
-            animation: fadeInOut 6s ease-in-out forwards;
-            min-width: 220px;
-            max-width: 300px;
-            word-wrap: break-word;
-            font-size: 15px;
-        }
-
-        .flash-message.success {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        .flash-message.error {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-        .flash-message.warning {
-            background-color: #fff3cd;
-            color: #856404;
-            border: 1px solid #ffeeba;
-        }
-
-        @keyframes fadeInOut {
-            0% { opacity: 0; transform: translateY(-10px); }
-            10% { opacity: 1; transform: translateY(0); }
-            90% { opacity: 1; }
-            100% { opacity: 0; transform: translateY(-100px); }
-        }
-    </style>
 </head>
 <body>
     <!-- menu -->
     <div class="navbar">
         <div class="menu-left">
-            <a href="{{ url_for('upload.danh_sach_de_thi') }}">Trang Chủ</a>
+            {% if username == "admin" %}
+                <a href="{{ url_for('ad_login.login') }}">Trang Chủ</a>
+            {% else %}
+                <a href="{{ url_for('upload.danh_sach_de_thi') }}">Trang Chủ</a>
+            {% endif %}
             <div class="subnav">
                 <button class="subnavbtn">Quản lí đề thi <i class="fa fa-caret-down"></i></button>
                 <div class="subnav-content">
@@ -63,15 +22,15 @@
                 <a href="#careers">Careers</a> -->
                 </div>
             </div>
-            <div class="subnav">
+            <!-- <div class="subnav">
                 <button class="subnavbtn">Người dùng <i class="fa fa-caret-down"></i></button>
                 <div class="subnav-content">
                 <a href="{{ url_for('users.users') }}">Danh sách người dùng</a>
                 <!-- <a href="#deliver">Deliver</a>
                 <a href="#package">Package</a>
                 <a href="#express">Express</a> -->
-                </div>
-            </div>
+                <!-- </div> -->
+            <!-- </div> -->
             <!-- <div class="subnav">
                 <button class="subnavbtn">Partners <i class="fa fa-caret-down"></i></button>
                 <div class="subnav-content">
@@ -83,34 +42,21 @@
             </div> -->
             <a href="{{ url_for('xuli_dethi.lam_bai') }}">Vào Thi</a>
             <a href="#contact">Liên hệ</a>
-        </div> 
-           <div class="menu-right">
-                <span>👤 Xin chào, <strong>{{ username }}</strong></span>
-                <span><a href="{{ url_for('ad_login.logout') }}">Đăng xuất</a></span>
-            </div>
+        </div>
+        <div class="menu-right">
+            <span>👤 Xin chào, 
+                <div id="usernameClick" style="display: inline;"><strong style="cursor:pointer; text-decoration: underline;">{{ username }}</strong></div>
+            </span>
+            <span><a href="{{ url_for('login.logout') }}">Đăng xuất</a></span>
+        </div>
     </div>
      <!--  -->
     <h2 style="color: red;">Danh sách đề thi</h2>
     <!-- Thông báo flash -->
     {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
-        <!-- <div id="flash-message" style="
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                z-index: 9999;
-                background-color: lightgreen;
-                color: green;
-                padding: 10px 15px;
-                border-radius: 8px;
-                box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-                opacity: 0;
-                transition: opacity 0.3s;"> -->
         <div id="flash-message-wrapper">
         {% for category, message in messages %}
-            <!-- <div style="display: inline-block; padding: 10px 20px; border-radius: 6px;
-                        background-color: {{ 'lightgreen' if category == 'success' else '#f8d7da' }};
-                        color: {{ 'green' if category == 'success' else '#721c24' }};"> -->
             <div class="flash-message {{ category }}">
             {{ message }}
             </div>
@@ -195,6 +141,50 @@
         </tbody>
     </table>
 
+    <!--  -->
+    <div class="pagination">
+    {% if page > 1 %}
+        <a href="?page={{ page - 1 }}{% if search_id %}&search_id={{ search_id }}{% endif %}">« Trang trước</a>
+    {% endif %}
+
+    {% for p in range(1, total_pages + 1) %}
+        {% if p == page %}
+            <!-- <strong>{{ p }}</strong> -->
+             <a href="" style="background-color: rgb(66, 201, 96); color: red;">{{ p }}</a>
+        {% else %}
+            <a href="?page={{ p }}{% if search_id %}&search_id={{ search_id }}{% endif %}">{{ p }}</a>
+        {% endif %}
+    {% endfor %}
+
+    {% if page < total_pages %}
+        <a href="?page={{ page + 1 }}{% if search_id %}&search_id={{ search_id }}{% endif %}">Trang sau »</a>
+    {% endif %}
+</div>
+
+    <!--  -->
+
+<!-- form change-password -->
+ <div id="changePasswordModal" style="display:none; position: fixed; top:0; left:0; 
+    width:100%; height:100%; background: rgba(0,0,0,0.5); z-index:99999; justify-content:center; align-items:center;">
+    <div style="background:white; padding:20px; border-radius:10px; width:320px; position:relative;">
+        <h3>Đổi mật khẩu</h3>
+        <form method="POST" action="{{ url_for('users.change_password') }}" class="form-reg">
+            <label>Mật khẩu hiện tại:</label>
+            <input type="password" name="old_password" required style="width:100%; padding:5px;"><br>
+            
+            <label>Mật khẩu mới:</label>
+            <input type="password" name="new_password" required style="width:100%; padding:5px;"><br>
+            
+            <label>Nhập lại mật khẩu mới:</label>
+            <input type="password" name="confirm_password" required style="width:100%; padding:5px;"><br>
+            
+            <button type="submit" style="padding:8px 15px;">Lưu thay đổi</button>
+            <button type="button" onclick="closeChangePasswordModal()" style="padding:8px 15px; background:#ccc;">Hủy</button>
+        </form>
+    </div>
+</div>
+<!--  -->
+
 <!-- JavaScript ẩn sau 5 giây -->
 <script>
   setTimeout(function() {
@@ -269,6 +259,16 @@ window.addEventListener('DOMContentLoaded', () => {
         }, 3000); // hiện 3s rồi mờ dần
     }
 });
+
+document.addEventListener('DOMContentLoaded', function(){
+    document.getElementById('usernameClick').addEventListener('click', function(){
+        document.getElementById('changePasswordModal').style.display = 'flex';
+    });
+});
+
+function closeChangePasswordModal(){
+    document.getElementById('changePasswordModal').style.display = 'none';
+}
 
 </script>
 </body>

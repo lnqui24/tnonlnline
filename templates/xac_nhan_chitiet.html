@@ -21,7 +21,7 @@
                     <label for="ho_ten">Họ tên học sinh:</label>
                     <input type="text" name="ho_ten" id="ho_ten" required
                     oninvalid="this.setCustomValidity('Bạn cần nhập họ tên')"
-                    oninput="this.setCustomValidity('')" placeholder="Lê Ngọc Quí">
+                    oninput="this.setCustomValidity('')">
                 </div>
             {% endif %}
 
@@ -30,7 +30,7 @@
                     <label for="lop">Lớp:</label>
                     <input type="text" name="lop" id="lop" required
                     oninvalid="this.setCustomValidity('Bạn cần nhập lớp')"
-                    oninput="this.setCustomValidity('')" placeholder="12A1">
+                    oninput="this.setCustomValidity('')">
                 </div>
             {% endif %}
 
@@ -39,7 +39,7 @@
                     <label for="truong">Trường:</label>
                     <input type="text" name="truong" id="truong" required
                     oninvalid="this.setCustomValidity('Bạn cần nhập trường học của mình')"
-                    oninput="this.setCustomValidity('')" placeholder="THPT Châu Văn Liêm">
+                    oninput="this.setCustomValidity('')">
                 </div>
             {% endif %}
                 <input type="hidden" name="id_dethi" value="{{ dethi.id }}">

@@ -6,7 +6,8 @@ from datetime import datetime
 import os, sqlite3, json
 import random, glob
 import string
-from functions import login_required
+from functions import login_required, num_per_page
+from math import ceil
 
 upload_bp = Blueprint('upload', __name__)
 
@@ -31,6 +32,7 @@ def update_answers(questions, answer_str):
     return questions
 
 def add_dethi_to_db(id: str, ten_dethi:str, so_cau:int, dap_an:str, time: int, id_dapan: int,  questions: list, db_path: str = 'student_info.db'):
+    teacher_id = session.get("teacher_id", -1)
     time_create = datetime.now().isoformat()
     action = 0
     xt_hs = "Họ tên, Lớp, Trường"
@@ -39,18 +41,16 @@ def add_dethi_to_db(id: str, ten_dethi:str, so_cau:int, dap_an:str, time: int, i
     conn = sqlite3.connect(db_path)
     c = conn.cursor()
     c.execute('''
-        INSERT INTO dethi (id, ten_dethi, so_cau, dap_an, time, id_dapan, action, xt_hs, noidung, time_create)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ''', (id, ten_dethi, so_cau, dap_an, time, id_dapan, action, xt_hs, noidung, time_create))
+        INSERT INTO dethi (id, ten_dethi, so_cau, dap_an, time, id_dapan, action, xt_hs, noidung, time_create, teacher_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (id, ten_dethi, so_cau, dap_an, time, id_dapan, action, xt_hs, noidung, time_create, teacher_id))
     conn.commit()
     conn.close()
 
 @upload_bp.route('/upload', methods=['GET', 'POST'])
 @login_required
 def upload():
-    print(">>> METHOD:", request.method)
     if request.method == 'POST':
-        print(">>> FORM đã gửi")
         file = request.files['file']
         random_suffix = generate_random_suffix()
         original_name, ext = os.path.splitext(secure_filename(file.filename))
@@ -61,7 +61,6 @@ def upload():
 
         new_filename = f"{original_name}_{random_suffix}{ext}"
         filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], new_filename)
-        # file.save(filepath)
 
         try:
             file.save(filepath)
@@ -73,7 +72,6 @@ def upload():
             return redirect(url_for('upload.upload'))
 
         try:
-            # questions = read_questions_from_docx(filepath,random_suffix)
             questions = read_questions_from_docx(filepath)
         except (InvalidDocxFile, FileLockedError, XMLParseError) as e:
             flash(f"Lỗi khi đọc file đề thi: {str(e)}", 'error')
@@ -83,15 +81,6 @@ def upload():
             return redirect(url_for('upload.upload'))
         
         if file and allowed_file(file.filename):
-            # original_name, ext = os.path.splitext(secure_filename(file.filename))
-            #random_suffix = generate_random_suffix()
-            # new_filename = f"{original_name}_{random_suffix}{ext}"
-            # filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], new_filename)
-            # file.save(filepath)
-            # Đọc câu hỏi từ file đã lưu
-            
-            # questions = read_questions_from_docx(filepath,random_suffix)
-
             time = 30 #phut
             id_dapan = 0
             ten_dethi =""
@@ -149,7 +138,7 @@ def save_exam_info():
             break
         dap_an1 += request.form.get(key)
         idx += 1
-
+    username = session.get("username", "Ẩn danh")
     id_dethi = request.form.get('id_dethi')
     ten_dethi = request.form.get('ten_dethi', '').strip()
     time = request.form.get('timeLimit', 30)
@@ -211,15 +200,21 @@ def save_exam_info():
 
     # Cập nhật vào CSDL
         
-    conn = sqlite3.connect('student_info.db')
-    c = conn.cursor()
+    # conn = sqlite3.connect('student_info.db')
+    # c = conn.cursor()
 
     # Bước 1: Lấy questions từ noidung trong CSDL
     conn = sqlite3.connect('student_info.db')
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
     
-    c.execute("SELECT noidung FROM dethi WHERE id = ?", (id_dethi,))
+    # c.execute("SELECT noidung FROM dethi WHERE id = ?", (id_dethi,))
+    c.execute("""
+        SELECT d.noidung
+        FROM dethi d
+        JOIN teachers t ON d.teacher_id = t.id
+        WHERE d.id = ? AND t.username = ?
+    """, (id_dethi, username))
     row = c.fetchone()
     if row and row['noidung']:
         try:
@@ -254,37 +249,122 @@ def save_exam_info():
 
 @upload_bp.route('/quanli_dethi', methods=['GET'])
 @login_required
+# def danh_sach_de_thi():
+#     username = session.get("username", "Ẩn danh")
+#     search_id = request.args.get('search_id', '').strip()
+
+#     conn = sqlite3.connect('student_info.db')
+#     c = conn.cursor()
+
+#     if search_id:
+#         c.execute('''
+#             SELECT d.id, d.ten_dethi, d.so_cau, d.dap_an, d.time, d.id_dapan, d.action, d.xt_hs, d.time_create,
+#                    COUNT(b.id_hocsinh) as sl_hs
+#             FROM dethi d
+#             LEFT JOIN baithi b ON d.id = b.id_dethi
+#             WHERE d.id LIKE ?
+#             GROUP BY d.id
+#             ORDER BY d.time_create DESC      
+#         ''', (f'%{search_id}%',))
+#     else:
+#         c.execute('''
+#             SELECT d.id, d.ten_dethi, d.so_cau, d.dap_an, d.time, d.id_dapan, d.action, d.xt_hs, d.time_create,
+#                    COUNT(b.id_hocsinh) as sl_hs
+#             FROM dethi d
+#             LEFT JOIN baithi b ON d.id = b.id_dethi
+#             GROUP BY d.id
+#             ORDER BY d.time_create DESC
+#         ''')
+
+#         # 
+#     rows = c.fetchall()
+#     conn.close()
+#     return render_template('quanli_dethi.html', dethi_list=rows, username=username)
+
 def danh_sach_de_thi():
     username = session.get("username", "Ẩn danh")
+    teacher_id = session.get("teacher_id",-1)
     search_id = request.args.get('search_id', '').strip()
+    page = request.args.get('page', 1, type=int)  # Trang hiện tại (mặc định = 1)
+    per_page = num_per_page  # Số bản ghi mỗi trang
+
+    offset = (page - 1) * per_page
 
     conn = sqlite3.connect('student_info.db')
     c = conn.cursor()
 
+    # Đếm tổng số đề thi để tính số trang
     if search_id:
+        # c.execute('SELECT COUNT(*) FROM dethi WHERE id LIKE ?', (f'%{search_id}%',))
+        c.execute('''
+            SELECT COUNT(*)
+            FROM dethi
+            WHERE id LIKE ? AND teacher_id = ?
+        ''', (f'%{search_id}%', teacher_id))
+    else:
+        # c.execute('SELECT COUNT(*) FROM dethi')
+        c.execute('''
+            SELECT COUNT(*)
+            FROM dethi
+            WHERE teacher_id = ?
+        ''', (teacher_id,))
+    total_rows = c.fetchone()[0]
+    total_pages = ceil(total_rows / per_page)
+
+    # Lấy danh sách đề thi theo trang
+    if search_id:
+        # c.execute('''
+        #     SELECT d.id, d.ten_dethi, d.so_cau, d.dap_an, d.time, d.id_dapan, d.action, d.xt_hs, d.time_create,
+        #            COUNT(b.id_hocsinh) as sl_hs
+        #     FROM dethi d
+        #     LEFT JOIN baithi b ON d.id = b.id_dethi
+        #     WHERE d.id LIKE ?
+        #     GROUP BY d.id
+        #     ORDER BY d.time_create DESC
+        #     LIMIT ? OFFSET ?
+        # ''', (f'%{search_id}%', per_page, offset))
         c.execute('''
             SELECT d.id, d.ten_dethi, d.so_cau, d.dap_an, d.time, d.id_dapan, d.action, d.xt_hs, d.time_create,
-                   COUNT(b.id_hocsinh) as sl_hs
+                COUNT(b.id_hocsinh) as sl_hs
             FROM dethi d
             LEFT JOIN baithi b ON d.id = b.id_dethi
-            WHERE d.id LIKE ?
+            WHERE d.id LIKE ? AND d.teacher_id = ?
             GROUP BY d.id
-            ORDER BY d.time_create DESC      
-        ''', (f'%{search_id}%',))
+            ORDER BY d.time_create DESC
+            LIMIT ? OFFSET ?
+        ''', (f'%{search_id}%', teacher_id, per_page, offset))
     else:
         c.execute('''
             SELECT d.id, d.ten_dethi, d.so_cau, d.dap_an, d.time, d.id_dapan, d.action, d.xt_hs, d.time_create,
                    COUNT(b.id_hocsinh) as sl_hs
             FROM dethi d
             LEFT JOIN baithi b ON d.id = b.id_dethi
+            WHERE d.teacher_id = ?
             GROUP BY d.id
             ORDER BY d.time_create DESC
-        ''')
+            LIMIT ? OFFSET ?
+        ''', (teacher_id, per_page, offset))
 
-        # 
     rows = c.fetchall()
     conn.close()
-    return render_template('quanli_dethi.html', dethi_list=rows, username=username)
+    if session.get("status") == 2:
+        return render_template(
+        'ad_quanli_dethi.html',
+        dethi_list=rows,
+        username=username,
+        page=page,
+        total_pages=total_pages,
+        search_id=search_id
+    )
+    else:
+        return render_template(
+            'quanli_dethi.html',
+            dethi_list=rows,
+            username=username,
+            page=page,
+            total_pages=total_pages,
+            search_id=search_id
+        )
 
 @upload_bp.route('/de/<id_dethi>', methods=['GET', 'POST'])
 @login_required

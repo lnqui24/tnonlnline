@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Danh sách đề thi</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/styles_quanli_dethi.css') }}">
+    <style>
+        #flash-message-wrapper {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .flash-message {
+            padding: 10px 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            opacity: 0;
+            animation: fadeInOut 6s ease-in-out forwards;
+            min-width: 220px;
+            max-width: 300px;
+            word-wrap: break-word;
+            font-size: 15px;
+        }
+
+        .flash-message.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .flash-message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .flash-message.warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
+
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateY(-10px); }
+            10% { opacity: 1; transform: translateY(0); }
+            90% { opacity: 1; }
+            100% { opacity: 0; transform: translateY(-100px); }
+        }
+    </style>
+</head>
+<body>
+    <!-- menu -->
+    <div class="navbar">
+        <div class="menu-left">
+            {% if username == "admin" %}
+                <a href="{{ url_for('ad_login.login') }}">Trang Chủ</a>
+            {% else %}
+                <a href="{{ url_for('upload.danh_sach_de_thi') }}">Trang Chủ</a>
+            {% endif %}
+            <div class="subnav">
+                <button class="subnavbtn">Quản lí đề thi <i class="fa fa-caret-down"></i></button>
+                <div class="subnav-content">
+                <a href="../upload">Tạo đề thi</a>
+                <!-- <a href="#team">Team</a>
+                <a href="#careers">Careers</a> -->
+                </div>
+            </div>
+            <div class="subnav">
+                <button class="subnavbtn">Người dùng <i class="fa fa-caret-down"></i></button>
+                <div class="subnav-content">
+                <a href="{{ url_for('users.users') }}">Danh sách người dùng</a> 
+                <!-- <a href="{{ url_for('re_teachers.register_teacher') }}">Thêm mới</a> -->
+                <!-- <a href="#package">Package</a>
+                <a href="#express">Express</a> -->
+                </div>
+            </div>
+            <!-- <div class="subnav">
+                <button class="subnavbtn">Partners <i class="fa fa-caret-down"></i></button>
+                <div class="subnav-content">
+                <a href="#link1">Link 1</a>
+                <a href="#link2">Link 2</a>
+                <a href="#link3">Link 3</a>
+                <a href="#link4">Link 4</a>
+                </div>
+            </div> -->
+            <a href="{{ url_for('xuli_dethi.lam_bai') }}">Vào Thi</a>
+            <a href="#contact">Liên hệ</a>
+            <a href="{{ url_for('ad_login.cleandb') }}">Dọn DATABASE</a>
+        </div> 
+           <div class="menu-right">
+                <span>👤 Xin chào, 
+                    <div id="usernameClick" style="display: inline;"><strong style="cursor:pointer; text-decoration: underline;">{{ username }}</strong></div>
+                </span> <span><a href="{{ url_for('ad_login.logout') }}">Đăng xuất</a></span>
+            </div>
+    </div>
+     <!--  -->
+    <h2 style="color: red;">Danh sách đề thi</h2>
+    <!-- Thông báo flash -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <!-- <div id="flash-message" style="
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                z-index: 9999;
+                background-color: lightgreen;
+                color: green;
+                padding: 10px 15px;
+                border-radius: 8px;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+                opacity: 0;
+                transition: opacity 0.3s;"> -->
+        <div id="flash-message-wrapper">
+        {% for category, message in messages %}
+            <!-- <div style="display: inline-block; padding: 10px 20px; border-radius: 6px;
+                        background-color: {{ 'lightgreen' if category == 'success' else '#f8d7da' }};
+                        color: {{ 'green' if category == 'success' else '#721c24' }};"> -->
+            <div class="flash-message {{ category }}">
+            {{ message }}
+            </div>
+        {% endfor %}
+        </div>
+    {% endif %}
+    {% endwith %}
+
+    <!-- Tìm kiếm đề thi -->
+     <form method="get" action="{{ url_for('upload.danh_sach_de_thi') }}" style="text-align: center; margin-bottom: 20px;">
+        <input type="text" name="search_id" placeholder="Nhập mã đề thi..." value="{{ request.args.get('search_id', '') }}" style="padding: 8px; font-size: 14px;">
+        <button type="submit" style="padding: 8px 12px;">Tìm</button>
+    </form>
+
+    <table>
+        <thead>
+            <tr>
+                <th>STT</th>
+                <th>Mã đề</th>
+                <th>Tên đề thi</th>
+                <th>Số lượng làm bài</th>
+                <th>Số câu TN</th>
+                <th>Đáp án đề gốc</th>
+                <th>Thời gian (phút)</th>
+                <th>Cho xem đáp án</th>
+                <th>Ngày tạo</th>
+                <th>Thao tác</th>
+                <th>Xác thực TT</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if dethi_list %}
+                {% for id, ten, so_cau, dap_an, time, id_dapan, action, xt_hs, created, sl_hs in dethi_list %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td><a href="{{ url_for('upload.chinh_sua_de', id_dethi=id) }}" 
+                                title="Nhấn vào để chỉnh sửa đề thi có mã {{ id }}"
+                                style="font-family: Consolas, monospace;">{{ id }}</a>
+                            <button onclick="copyToClipboard('{{ id }}')" 
+                                title="Copy mã đề {{id}}" 
+                                style="margin-left: -7px; border: none; background: none; cursor: pointer;">🗐</button>
+                        </td>
+                        <!-- <td><a href="{{ url_for('xuli_dethi.bailam', id_dethi=id) }}"  style="font-family: Consolas, monospace;">{{ id }}</a></td> -->
+                        <td>{{ ten or "(chưa nhập)" }}</td>
+                        <!-- <td>{{loop.index0}}</td> -->
+                         <td>
+                            <a title="Nhấn vào để xem số lượng học sinh đã làm bài của đề {{id}}" 
+                            href="{{ url_for('xuli_dethi.bailam', id_dethi=id) }}" >{{ sl_hs }}
+                            </a>
+                        </td>
+                        <td>{{ so_cau }}</td>
+                        <td>{{ dap_an }}</td>
+                        <td>{{ time }}</td>
+                        <td>{{ "Có" if id_dapan else "Không" }}</td>
+                        <td>{{ created[:19].replace("T", " ") }}</td>
+                        <td style="width: 12%;"> 
+                            <a class="quay-ve-btn {{ 'mo-khoa' if action == 0 else 'khoa' }}" 
+                            href="{{ url_for('upload.toggle_khoa_de', id_dethi=id) }}"
+                            title="Nhấn vào để {{ 'mở khóa' if action else 'khóa' }} đề thi {{id}}"
+                            onclick="return confirm('Bạn có chắc chắn muốn {{ 'mở khóa' if action else 'khóa' }} đề này?')">
+                                {{ 'Mở khóa' if action else 'Khóa' }}
+                            </a> |
+                            <a class="quay-ve-btn" 
+                                title="Nhấn vào để xóa đề thi {{id}}"
+                                href="{{ url_for('upload.xoa_de', id_dethi=id) }}" onclick="return confirm('Bạn có chắc chắn muốn xoá đề này?')">Xoá
+                            </a>
+                        </td>
+                        <td title="Các trường học sinh cần xác nhận">
+                            {% if xt_hs.strip() %}
+                                {{ xt_hs }}
+                            {% else %}
+                                <span style="color: red;">Không cần</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td colspan="11" style="text-align: center; font-style: italic; color: #666;">Không có đề thi nào trong CSDL của bạn!</td>
+                </tr>
+            {% endif %}
+        </tbody>
+    </table>
+<!--  -->
+<!--  -->
+<div class="pagination">
+    {% if page > 1 %}
+        <a href="?page={{ page - 1 }}{% if search_id %}&search_id={{ search_id }}{% endif %}">« Trang trước</a>
+    {% endif %}
+
+    {% for p in range(1, total_pages + 1) %}
+        {% if p == page %}
+            <!-- <strong>{{ p }}</strong> -->
+             <a href="" style="background-color: rgb(66, 201, 96); color: red;">{{ p }}</a>
+        {% else %}
+            <a href="?page={{ p }}{% if search_id %}&search_id={{ search_id }}{% endif %}">{{ p }}</a>
+        {% endif %}
+    {% endfor %}
+
+    {% if page < total_pages %}
+        <a href="?page={{ page + 1 }}{% if search_id %}&search_id={{ search_id }}{% endif %}">Trang sau »</a>
+    {% endif %}
+</div>
+
+    <!--  -->
+    <!-- form change-password -->
+ <div id="changePasswordModal" style="display:none; position: fixed; top:0; left:0; 
+    width:100%; height:100%; background: rgba(0,0,0,0.5); z-index:99999; justify-content:center; align-items:center;">
+    <div style="background:white; padding:20px; border-radius:10px; width:320px; position:relative;">
+        <h3>Đổi mật khẩu</h3>
+        <form method="POST" action="{{ url_for('users.change_password') }}" id="formUser">
+            <label>Mật khẩu hiện tại:</label>
+            <input type="password" name="old_password" required style="width:100%; padding:5px;"><br>
+            
+            <label>Mật khẩu mới:</label>
+            <input type="password" name="new_password" required style="width:100%; padding:5px;"><br>
+            
+            <label>Nhập lại mật khẩu mới:</label>
+            <input type="password" name="confirm_password" required style="width:100%; padding:5px;"><br>
+            
+            <button type="submit" style="padding:8px 15px;">Lưu thay đổi</button>
+            <button type="button" onclick="closeChangePasswordModal()" style="padding:8px 15px; background:#ccc;">Hủy</button>
+        </form>
+    </div>
+</div>
+<!--  -->
+<!--  -->
+
+<!-- JavaScript ẩn sau 5 giây -->
+<script>
+  setTimeout(function() {
+    var flash = document.getElementById('flash-message');
+    if (flash) {
+      flash.style.display = 'none';
+    }
+  }, 3000); // 5000 milliseconds = 5 giây
+
+
+function copyToClipboard(text) {
+    if (!navigator.clipboard) {
+        // Fallback nếu trình duyệt cũ
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        textarea.style.position = "fixed";
+        textarea.style.opacity = 0;
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        try {
+            document.execCommand("copy");
+            showCopiedMessage(text);
+        } catch (err) {
+            console.error("Fallback copy failed", err);
+        }
+        document.body.removeChild(textarea);
+        return;
+    }
+
+    navigator.clipboard.writeText(text).then(function() {
+        showCopiedMessage(text);
+    }, function(err) {
+        console.error("Copy failed", err);
+    });
+}
+
+function showCopiedMessage(text) {
+    const msg = document.createElement("div");
+    msg.textContent = "✅ Đã copy mã đề: " + text;
+    msg.style.position = "fixed";
+    msg.style.top = "20px";
+    msg.style.right = "20px";
+    msg.style.background = "#4CAF50";
+    msg.style.color = "white";
+    msg.style.padding = "10px 15px";
+    msg.style.borderRadius = "8px";
+    msg.style.boxShadow = "0 2px 5px rgba(0,0,0,0.2)";
+    msg.style.zIndex = 9999;
+    msg.style.opacity = 0;
+    msg.style.transition = "opacity 0.3s";
+
+    document.body.appendChild(msg);
+
+    // Làm mờ và ẩn sau 2.5s
+    setTimeout(() => msg.style.opacity = 1, 10);
+    setTimeout(() => {
+        msg.style.opacity = 0;
+        setTimeout(() => msg.remove(), 300);
+    }, 2500);
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+    const flash = document.getElementById('flash-message');
+    if (flash) {
+        flash.style.opacity = 1;
+        setTimeout(() => {
+            flash.style.opacity = 0;
+            setTimeout(() => {
+                flash.remove();
+            }, 500);
+        }, 3000); // hiện 3s rồi mờ dần
+    }
+});
+
+
+document.addEventListener('DOMContentLoaded', function(){
+    document.getElementById('usernameClick').addEventListener('click', function(){
+        document.getElementById('changePasswordModal').style.display = 'flex';
+    });
+});
+
+function closeChangePasswordModal(){
+    document.getElementById('changePasswordModal').style.display = 'none';
+}
+
+
+</script>
+</body>
+</html>

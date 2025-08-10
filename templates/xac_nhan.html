@@ -13,6 +13,9 @@
             <input type="text" id="ma_dethi" name="ma_dethi" placeholder="Nhập mã đề..." required autofocus
                 title="Nhập mã đề thi do Giáo viên cung cấp." />
             <button type="submit">Xác nhận</button>
+            <p style="font-size: small; text-align: right; margin: 2px;">Đăng nhập tài khoản giáo viên 
+                <span style="font-size: small;"><a href="{{ url_for('login.login') }}" style="color: red;">Đăng nhập</a></span>
+            </p>
         </form>
 
         {% with messages = get_flashed_messages() %}
